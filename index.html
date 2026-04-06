@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Budget Planner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">budget<span class="accent">.</span></div>
+    <nav class="sidebar-nav">
+      <a href="#" class="nav-item active" data-page="home">
+        <span class="nav-icon">⊞</span><span>Dashboard</span>
+      </a>
+      <a href="#" class="nav-item" data-page="categories">
+        <span class="nav-icon">◈</span><span>Kategori</span>
+      </a>
+      <a href="#" class="nav-item" data-page="history">
+        <span class="nav-icon">≡</span><span>Riwayat</span>
+      </a>
+      <a href="#" class="nav-item" data-page="calendar">
+        <span class="nav-icon">▦</span><span>Kalender</span>
+      </a>
+      <a href="#" class="nav-item" data-page="settings">
+        <span class="nav-icon">⊙</span><span>Pengaturan</span>
+      </a>
+    </nav>
+    <div class="sidebar-bottom">
+      <button class="theme-toggle" id="theme-toggle">
+        <span class="theme-icon">☀️</span>
+        <span id="theme-label">Light Mode</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-home">
+      <div class="page-header">
+        <div>
+          <p class="page-tag">// overview</p>
+          <h1 class="page-title">Dashboard</h1>
+        </div>
+        <span class="current-month" id="current-month"></span>
+      </div>
+      <div id="budget-notif" class="budget-notif"></div>
+      <div class="dashboard-grid">
+        <div class="dash-card card-income">
+          <p class="dash-card-label">Total Pemasukan</p>
+          <div class="income-row">
+            <span class="currency">Rp</span>
+            <input type="number" id="income-input" class="income-big-input" placeholder="0" min="0" />
+          </div>
+          <div class="income-meta">
+            <span class="meta-item income-color">↑ <span id="income-display">Rp 0</span> /</span>
+            <select id="income-period" class="period-select">
+              <option value="minggu">Minggu</option>
+              <option value="2minggu">2 Minggu</option>
+              <option value="bulan" selected>Bulan</option>
+              <option value="tahun">Tahun</option>
+            </select>
+          </div>
+          <div class="income-extra-row">
+            <span class="meta-item" style="font-size:11px">+ Tambahan: <span id="extra-income-display" class="income-color">Rp 0</span></span>
+          </div>
+        </div>
+
+        <div class="dash-card card-saving">
+          <p class="dash-card-label">Tabungan</p>
+          <p class="dash-big-num saving-color" id="saving-display">Rp 0</p>
+          <div class="saving-bar-track">
+            <div class="saving-bar-fill" id="saving-bar"></div>
+          </div>
+          <p class="saving-pct"><span id="saving-pct">0</span>% dari pemasukan</p>
+        </div>
+
+        <div class="dash-card card-chart">
+          <p class="dash-card-label">Distribusi Pengeluaran</p>
+          <div class="donut-wrap">
+            <canvas id="donut-chart" width="160" height="160"></canvas>
+            <div class="donut-center">
+              <p class="donut-pct" id="donut-pct">0%</p>
+              <p class="donut-sub">terpakai</p>
+            </div>
+          </div>
+          <div class="chart-legend" id="chart-legend"></div>
+        </div>
+
+        <div class="dash-card card-bar">
+          <p class="dash-card-label">Alokasi vs Terpakai</p>
+          <div class="bar-chart" id="bar-chart"></div>
+        </div>
+
+        <div class="dash-card card-summary">
+          <p class="dash-card-label">Ringkasan</p>
+          <div class="summary-rows">
+            <div class="summary-row">
+              <span class="sum-label">Pemasukan Rutin</span>
+              <span class="sum-val income-color" id="sum-income">Rp 0</span>
+            </div>
+            <div class="summary-row">
+              <span class="sum-label">Pemasukan Tambahan</span>
+              <span class="sum-val income-color" id="sum-extra">Rp 0</span>
+            </div>
+            <div class="summary-row">
+              <span class="sum-label">Total Pengeluaran</span>
+              <span class="sum-val expense-color" id="sum-spent">Rp 0</span>
+            </div>
+            <div class="summary-row">
+              <span class="sum-label">Sisa</span>
+              <span class="sum-val" id="sum-remaining">Rp 0</span>
+            </div>
+            <div class="summary-row">
+              <span class="sum-label">Tabungan</span>
+              <span class="sum-val saving-color" id="sum-saving">Rp 0</span>
+            </div>
+            <div class="divider"></div>
+            <div class="progress-row">
+              <div class="progress-header-row">
+                <span class="sum-label">Penggunaan</span>
+                <span class="sum-val accent-color" id="usage-pct">0%</span>
+              </div>
+              <div class="progress-track">
+                <div class="progress-fill" id="progress-fill"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- KATEGORI -->
+    <div class="page" id="page-categories">
+      <div class="page-header">
+        <div>
+          <p class="page-tag">// kelola</p>
+          <h1 class="page-title">Kategori</h1>
+        </div>
+        <button class="add-btn" id="add-category-btn">+ Tambah</button>
+      </div>
+      <div class="categories-list" id="categories-list"></div>
+    </div>
+
+    <!-- RIWAYAT -->
+    <div class="page" id="page-history">
+      <div class="page-header">
+        <div>
+          <p class="page-tag">// log</p>
+          <h1 class="page-title">Riwayat</h1>
+        </div>
+        <div style="display:flex;gap:0.75rem">
+          <button class="add-btn-income" id="add-income-btn">+ Pemasukan</button>
+          <button class="add-btn" id="add-transaction-btn">+ Pengeluaran</button>
+        </div>
+      </div>
+      <div class="history-list" id="history-list"></div>
+    </div>
+
+    <!-- KALENDER -->
+    <div class="page" id="page-calendar">
+      <div class="page-header">
+        <div>
+          <p class="page-tag">// jadwal</p>
+          <h1 class="page-title">Kalender</h1>
+        </div>
+        <div class="cal-nav">
+          <button class="cal-arrow" id="cal-prev">&#8592;</button>
+          <span class="cal-month-label" id="cal-month-label"></span>
+          <button class="cal-arrow" id="cal-next">&#8594;</button>
+        </div>
+      </div>
+      <div class="calendar-wrap">
+        <div class="cal-grid-header">
+          <span>Min</span><span>Sen</span><span>Sel</span>
+          <span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span>
+        </div>
+        <div class="cal-grid" id="cal-grid"></div>
+      </div>
+      <div class="cal-detail" id="cal-detail">
+        <p class="cal-detail-empty">Pilih tanggal untuk melihat transaksi</p>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="page" id="page-settings">
+      <div class="page-header">
+        <div>
+          <p class="page-tag">// preferensi</p>
+          <h1 class="page-title">Pengaturan</h1>
+        </div>
+      </div>
+      <div class="settings-list">
+        <div class="setting-item">
+          <div>
+            <p class="setting-label">Reset Data</p>
+            <p class="setting-desc">Hapus semua data dan mulai dari awal</p>
+          </div>
+          <button class="danger-btn" id="reset-btn">Reset</button>
+        </div>
+        <div class="setting-item">
+          <div>
+            <p class="setting-label">Bulan Aktif</p>
+            <p class="setting-desc">Bulan yang sedang dikelola</p>
+          </div>
+          <span class="setting-val" id="setting-month"></span>
+        </div>
+        <div class="setting-item">
+          <div>
+            <p class="setting-label">Tema</p>
+            <p class="setting-desc">Tampilan gelap atau terang</p>
+          </div>
+          <button class="outline-btn" id="theme-toggle-2">Dark Mode</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- TOOLTIP KALENDER -->
+<div class="cal-tooltip" id="cal-tooltip"></div>
+
+<!-- CONFIRM DIALOG -->
+<div class="modal hidden" id="confirm-overlay">
+  <div class="modal-box confirm-box">
+    <div class="modal-body" style="padding:1.75rem 1.5rem 1.25rem">
+      <p id="confirm-message" style="font-size:15px;color:var(--text);text-align:center;line-height:1.6"></p>
+    </div>
+    <div style="display:flex;gap:0.75rem;padding:0 1.5rem 1.5rem">
+      <button class="confirm-btn-no" id="confirm-no">Batal</button>
+      <button class="confirm-btn-yes" id="confirm-yes">Hapus</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL KATEGORI -->
+<div class="modal hidden" id="modal-cat">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span>Tambah Kategori</span>
+      <button class="modal-close" id="modal-cat-close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <label>Nama Kategori</label>
+      <input type="text" id="cat-name" placeholder="contoh: Makan" maxlength="20" />
+      <label>Alokasi (Rp)</label>
+      <input type="number" id="cat-budget" placeholder="0" min="0" />
+      <label>Warna</label>
+      <div class="color-options" id="color-options"></div>
+    </div>
+    <button class="modal-save" id="modal-cat-save">Simpan</button>
+  </div>
+</div>
+
+<!-- MODAL PENGELUARAN -->
+<div class="modal hidden" id="modal-trx">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span>Tambah Pengeluaran</span>
+      <button class="modal-close" id="modal-trx-close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <label>Keterangan</label>
+      <input type="text" id="trx-name" placeholder="contoh: Makan siang" maxlength="40" />
+      <label>Jumlah (Rp)</label>
+      <input type="number" id="trx-amount" placeholder="0" min="0" />
+      <label>Kategori</label>
+      <select id="trx-category"></select>
+    </div>
+    <button class="modal-save" id="modal-trx-save">Simpan</button>
+  </div>
+</div>
+
+<!-- MODAL PEMASUKAN TAMBAHAN -->
+<div class="modal hidden" id="modal-income">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span>Tambah Pemasukan</span>
+      <button class="modal-close" id="modal-income-close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <label>Keterangan</label>
+      <input type="text" id="inc-name" placeholder="contoh: Bonus, Freelance" maxlength="40" />
+      <label>Jumlah (Rp)</label>
+      <input type="number" id="inc-amount" placeholder="0" min="0" />
+    </div>
+    <button class="modal-save" id="modal-income-save">Simpan</button>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
