@@ -87,7 +87,8 @@ function calcInterest(cat) {
   const principal = cat.spent;
   if (principal <= 0) return 0;
   const msPerDay = 1000 * 60 * 60 * 24;
-const days = Math.max(1, Math.floor((Date.now() - new Date(cat.firstSavedAt).getTime()) / msPerDay));
+  const days = Math.floor((Date.now() - new Date(cat.firstSavedAt).getTime()) / msPerDay);
+  if (days < 1) return 0;
   const r = cat.interestRate / 100;
   return principal * (Math.pow(1 + r / 365, days) - 1);
 }
