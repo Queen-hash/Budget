@@ -13,7 +13,6 @@
 
 <div class="app">
 
-  <!-- SIDEBAR -->
   <aside class="sidebar">
     <div class="sidebar-brand">
       <div class="brand-icon">F</div>
@@ -72,10 +71,8 @@
     </div>
   </aside>
 
-  <!-- MAIN -->
   <div class="main-wrap">
 
-    <!-- TOPBAR -->
     <header class="topbar">
       <div class="topbar-left">
         <h2 class="topbar-title" id="topbar-title">Dashboard</h2>
@@ -87,15 +84,12 @@
       </div>
     </header>
 
-    <!-- PAGES -->
     <main class="main">
 
-      <!-- DASHBOARD -->
       <div class="page active" id="page-dashboard">
 
         <div id="budget-notif" class="budget-notif"></div>
 
-        <!-- Row 1: Summary Cards -->
         <div class="summary-row">
           <div class="sum-card card-total">
             <div class="sum-card-top">
@@ -153,7 +147,6 @@
           </div>
         </div>
 
-        <!-- Row 2: Charts -->
         <div class="charts-row">
           <div class="chart-card card-trend">
             <div class="chart-card-header">
@@ -177,7 +170,6 @@
           </div>
         </div>
 
-        <!-- Row 3: Expense Breakdown + Recent -->
         <div class="bottom-row">
           <div class="breakdown-card">
             <div class="chart-card-header">
@@ -197,7 +189,6 @@
 
       </div>
 
-      <!-- TRANSAKSI -->
       <div class="page" id="page-transactions">
         <div class="trx-filter-row">
           <button class="filter-btn active" data-filter="all">Semua</button>
@@ -207,7 +198,6 @@
         <div class="trx-list" id="trx-list"></div>
       </div>
 
-      <!-- BUDGET -->
       <div class="page" id="page-budget">
         <div class="page-actions">
           <button class="add-btn" id="add-category-btn">+ Kategori</button>
@@ -215,7 +205,6 @@
         <div class="budget-list" id="budget-list"></div>
       </div>
 
-      <!-- KALENDER -->
       <div class="page" id="page-calendar">
         <div class="cal-header-row">
           <button class="cal-arrow" id="cal-prev">←</button>
@@ -234,7 +223,6 @@
         </div>
       </div>
 
-      <!-- SETTINGS -->
       <div class="page" id="page-settings">
         <div class="settings-list">
           <div class="setting-item">
@@ -258,10 +246,8 @@
   </div>
 </div>
 
-<!-- TOOLTIP -->
 <div class="cal-tooltip" id="cal-tooltip"></div>
 
-<!-- CONFIRM DIALOG -->
 <div class="modal hidden" id="confirm-overlay">
   <div class="modal-box confirm-box">
     <div class="modal-body" style="padding:1.75rem 1.5rem 1.25rem">
@@ -274,7 +260,6 @@
   </div>
 </div>
 
-<!-- MODAL PEMASUKAN -->
 <div class="modal hidden" id="modal-income">
   <div class="modal-box">
     <div class="modal-header">
@@ -291,7 +276,6 @@
   </div>
 </div>
 
-<!-- MODAL PENGELUARAN -->
 <div class="modal hidden" id="modal-expense">
   <div class="modal-box">
     <div class="modal-header">
@@ -310,7 +294,6 @@
   </div>
 </div>
 
-<!-- MODAL KATEGORI -->
 <div class="modal hidden" id="modal-cat">
   <div class="modal-box">
     <div class="modal-header">
