@@ -147,10 +147,17 @@
           </div>
         </div>
 
+        <div class="insights-row" id="insights-row"></div>
+
         <div class="charts-row">
           <div class="chart-card card-trend">
             <div class="chart-card-header">
-              <span class="chart-card-title">Tren Pengeluaran Mingguan</span>
+              <span class="chart-card-title">Tren Pengeluaran</span>
+              <div class="time-filter-tabs">
+                <button class="time-tab" data-period="daily">Harian</button>
+                <button class="time-tab active" data-period="weekly">Mingguan</button>
+                <button class="time-tab" data-period="monthly">Bulanan</button>
+              </div>
             </div>
             <div class="bar-chart-wrap" id="weekly-chart"></div>
           </div>
@@ -190,6 +197,16 @@
       </div>
 
       <div class="page" id="page-transactions">
+        <div class="trx-search-row">
+          <div class="search-wrap">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <input type="text" id="trx-search" placeholder="Cari transaksi..." autocomplete="off" />
+            <button class="search-clear hidden" id="trx-search-clear">×</button>
+          </div>
+          <select id="trx-cat-filter" class="cat-filter-sel">
+            <option value="all">Semua Kategori</option>
+          </select>
+        </div>
         <div class="trx-filter-row">
           <button class="filter-btn active" data-filter="all">Semua</button>
           <button class="filter-btn" data-filter="income">Pemasukan</button>
@@ -238,6 +255,30 @@
               <p class="setting-desc">Tampilan gelap atau terang</p>
             </div>
             <button class="outline-btn" id="theme-toggle-2">Dark Mode</button>
+          </div>
+          <div class="setting-item">
+            <div>
+              <p class="setting-label">Ekspor Data (CSV)</p>
+              <p class="setting-desc">Unduh semua transaksi dalam format spreadsheet</p>
+            </div>
+            <button class="outline-btn" id="export-csv-btn">Ekspor CSV</button>
+          </div>
+          <div class="setting-item">
+            <div>
+              <p class="setting-label">Backup Data</p>
+              <p class="setting-desc">Simpan semua data sebagai file JSON</p>
+            </div>
+            <button class="outline-btn" id="backup-btn">Backup</button>
+          </div>
+          <div class="setting-item">
+            <div>
+              <p class="setting-label">Restore Data</p>
+              <p class="setting-desc">Pulihkan data dari file backup JSON</p>
+            </div>
+            <div style="display:flex;align-items:center;gap:0.5rem">
+              <button class="outline-btn" id="restore-btn">Pilih File</button>
+              <input type="file" id="restore-file" accept=".json" style="display:none" />
+            </div>
           </div>
         </div>
       </div>

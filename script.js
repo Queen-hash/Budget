@@ -21,6 +21,7 @@ let state = {
 const COLORS = ['#43e97b','#4facfe','#f093fb','#a78bfa','#ffecd2','#f5576c','#667eea','#fbbf24','#38f9d7','#fb923c'];
 const MONTHS_ID = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
 const WEEK_LABELS = ['M1','M2','M3','M4','M5'];
+const SHORT_MONTHS_MAP = { 'Jan':0,'Feb':1,'Mar':2,'Apr':3,'Mei':4,'Jun':5,'Jul':6,'Agu':7,'Sep':8,'Okt':9,'Nov':10,'Des':11 };
 
 const CAT_EMOJI = {
   'Makan': '🍔', 'Transport': '🚗', 'Hiburan': '🎮',
@@ -36,6 +37,17 @@ function formatRp(n) {
 
 function todayStr() {
   return new Date().toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric' });
+}
+
+function parseTrxDate(dateStr) {
+  if (!dateStr) return null;
+  const parts = dateStr.split(' ');
+  if (parts.length < 3) return null;
+  const day = parseInt(parts[0]);
+  const monthIdx = SHORT_MONTHS_MAP[parts[1]];
+  const year = parseInt(parts[2]);
+  if (monthIdx === undefined || isNaN(day) || isNaN(year)) return null;
+  return new Date(year, monthIdx, day);
 }
 
 function getWeekNum(dateStr) {
@@ -135,6 +147,7 @@ function renderDashboard() {
   renderWeeklyChart();
   renderBreakdown();
   renderRecent();
+  renderInsights();
 }
 
 function renderDonut(totalSpent) {
@@ -182,21 +195,55 @@ function renderWeeklyChart() {
   const container = document.getElementById('weekly-chart');
   container.innerHTML = '';
 
-  const weeks = Array(5).fill(null).map(() => ({ income: 0, expense: 0 }));
-  state.transactions.forEach(t => {
-    const w = getWeekNum(t.date);
-    if (w >= 0 && w < 5) {
-      if (t.type === 'income')  weeks[w].income  += t.amount;
-      if (t.type === 'expense') weeks[w].expense += t.amount;
+  let dataPoints = [];
+  let xLabels    = [];
+
+  if (currentTimeFilter === 'daily') {
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric' });
+      const dayTrxs = state.transactions.filter(t => t.date === dateStr);
+      dataPoints.push({
+        income:  dayTrxs.filter(t => t.type === 'income').reduce((s,t) => s+t.amount, 0),
+        expense: dayTrxs.filter(t => t.type === 'expense').reduce((s,t) => s+t.amount, 0),
+      });
+      xLabels.push(d.toLocaleDateString('id-ID', { weekday: 'short' }));
     }
-  });
+  } else if (currentTimeFilter === 'monthly') {
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(1);
+      d.setMonth(d.getMonth() - i);
+      const tgtMonth = d.getMonth();
+      const tgtYear  = d.getFullYear();
+      const monthTrxs = state.transactions.filter(t => {
+        const p = parseTrxDate(t.date);
+        return p && p.getMonth() === tgtMonth && p.getFullYear() === tgtYear;
+      });
+      dataPoints.push({
+        income:  monthTrxs.filter(t => t.type === 'income').reduce((s,t) => s+t.amount, 0),
+        expense: monthTrxs.filter(t => t.type === 'expense').reduce((s,t) => s+t.amount, 0),
+      });
+      xLabels.push(MONTHS_ID[tgtMonth].substring(0, 3));
+    }
+  } else {
+    const weeks = Array(5).fill(null).map(() => ({ income: 0, expense: 0 }));
+    state.transactions.forEach(t => {
+      const w = getWeekNum(t.date);
+      if (w >= 0 && w < 5) {
+        if (t.type === 'income')  weeks[w].income  += t.amount;
+        if (t.type === 'expense') weeks[w].expense += t.amount;
+      }
+    });
+    dataPoints = weeks;
+    xLabels    = WEEK_LABELS;
+  }
 
-  const maxVal = Math.max(...weeks.map(w => Math.max(w.income, w.expense)), 1);
-
-  // Pakai viewBox proporsional — JANGAN preserveAspectRatio:none
+  const maxVal = Math.max(...dataPoints.map(d => Math.max(d.income, d.expense)), 1);
   const W = 500, H = 160, padX = 20, padY = 16;
 
-  function toX(i)   { return padX + (i / (weeks.length - 1)) * (W - padX * 2); }
+  function toX(i)   { return padX + (i / (dataPoints.length - 1)) * (W - padX * 2); }
   function toY(val) { return padY + (1 - val / maxVal) * (H - padY * 2); }
 
   function makeCurvePath(values) {
@@ -210,16 +257,14 @@ function renderWeeklyChart() {
   }
 
   function makeAreaPath(values) {
-    return `${makeCurvePath(values)} L ${toX(weeks.length - 1)} ${H} L ${toX(0)} ${H} Z`;
+    return `${makeCurvePath(values)} L ${toX(dataPoints.length - 1)} ${H} L ${toX(0)} ${H} Z`;
   }
 
   const ns = 'http://www.w3.org/2000/svg';
   const svg = document.createElementNS(ns, 'svg');
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
-  // Tanpa preserveAspectRatio:none — biar dot tetap bulat
   svg.style.cssText = 'width:100%;height:auto;display:block;';
 
-  // Defs: gradients
   const defs = document.createElementNS(ns, 'defs');
   [['income','#43e97b'],['expense','#f5576c']].forEach(([type, color]) => {
     const grad = document.createElementNS(ns, 'linearGradient');
@@ -237,7 +282,6 @@ function renderWeeklyChart() {
   });
   svg.appendChild(defs);
 
-  // Grid lines
   [0, 0.5, 1].forEach(pct => {
     const y = padY + (1 - pct) * (H - padY * 2);
     const line = document.createElementNS(ns, 'line');
@@ -249,20 +293,18 @@ function renderWeeklyChart() {
   });
 
   const series = [
-    { vals: weeks.map(w => w.income),  color: '#43e97b', type: 'income',  label: 'Pemasukan'   },
-    { vals: weeks.map(w => w.expense), color: '#f5576c', type: 'expense', label: 'Pengeluaran' },
+    { vals: dataPoints.map(d => d.income),  color: '#43e97b', type: 'income',  label: 'Pemasukan'   },
+    { vals: dataPoints.map(d => d.expense), color: '#f5576c', type: 'expense', label: 'Pengeluaran' },
   ];
 
   series.forEach(({ vals, color, type, label }) => {
     if (vals.every(v => v === 0)) return;
 
-    // Area fill
     const area = document.createElementNS(ns, 'path');
     area.setAttribute('d', makeAreaPath(vals));
     area.setAttribute('fill', `url(#wcg-${type})`);
     svg.appendChild(area);
 
-    // Line
     const path = document.createElementNS(ns, 'path');
     path.setAttribute('d', makeCurvePath(vals));
     path.setAttribute('fill', 'none');
@@ -275,7 +317,6 @@ function renderWeeklyChart() {
     svg.appendChild(path);
     requestAnimationFrame(() => { path.style.strokeDashoffset = '0'; });
 
-    // Dots — ukuran proporsional ke viewBox besar
     vals.forEach((v, i) => {
       const circle = document.createElementNS(ns, 'circle');
       circle.setAttribute('cx', toX(i));
@@ -287,7 +328,7 @@ function renderWeeklyChart() {
       circle.style.opacity    = '0';
       circle.style.transition = `opacity 0.3s ease ${0.5 + i * 0.07}s`;
       const title = document.createElementNS(ns, 'title');
-      title.textContent = `${label} ${WEEK_LABELS[i]}: ${formatRp(v)}`;
+      title.textContent = `${label} ${xLabels[i]}: ${formatRp(v)}`;
       circle.appendChild(title);
       svg.appendChild(circle);
       requestAnimationFrame(() => { circle.style.opacity = '1'; });
@@ -296,10 +337,9 @@ function renderWeeklyChart() {
 
   container.appendChild(svg);
 
-  // X axis labels
   const labelRow = document.createElement('div');
   labelRow.className = 'line-chart-labels';
-  WEEK_LABELS.forEach(lbl => {
+  xLabels.forEach(lbl => {
     const span = document.createElement('span');
     span.className = 'week-label';
     span.textContent = lbl;
@@ -307,7 +347,6 @@ function renderWeeklyChart() {
   });
   container.appendChild(labelRow);
 
-  // Legend
   const legend = document.createElement('div');
   legend.className = 'line-chart-legend';
   [['#43e97b','Pemasukan'], ['#f5576c','Pengeluaran']].forEach(([color, label]) => {
@@ -347,7 +386,12 @@ function renderBreakdown() {
   });
 
   if (!state.categories.some(c => c.spent > 0 || c.budget > 0)) {
-    list.innerHTML = '<div class="empty-state">Belum ada data kategori</div>';
+    list.innerHTML = `
+      <div class="empty-state-full">
+        <div class="empty-icon">📊</div>
+        <p class="empty-title">Belum ada data kategori</p>
+        <p class="empty-sub">Set alokasi budget di halaman Budget</p>
+      </div>`;
   }
 }
 
@@ -357,7 +401,12 @@ function renderRecent() {
   list.innerHTML = '';
 
   if (!trxs.length) {
-    list.innerHTML = '<div class="empty-state">Belum ada transaksi</div>';
+    list.innerHTML = `
+      <div class="empty-state-full">
+        <div class="empty-icon">📝</div>
+        <p class="empty-title">Belum ada transaksi</p>
+        <p class="empty-sub">Transaksi terbaru akan muncul di sini</p>
+      </div>`;
     return;
   }
 
@@ -389,15 +438,31 @@ function renderRecent() {
 // =====================
 // RENDER TRANSACTIONS
 // =====================
-let currentFilter = 'all';
+let currentFilter      = 'all';
+let currentSearchQuery = '';
+let currentCatFilter   = 'all';
+let currentTimeFilter  = 'weekly';
 
 function renderTransactions() {
   const list = document.getElementById('trx-list');
   let trxs   = [...state.transactions].reverse();
   if (currentFilter !== 'all') trxs = trxs.filter(t => t.type === currentFilter);
+  if (currentSearchQuery) trxs = trxs.filter(t => t.name.toLowerCase().includes(currentSearchQuery));
+  if (currentCatFilter !== 'all') trxs = trxs.filter(t => t.catId === parseInt(currentCatFilter));
 
   if (!trxs.length) {
-    list.innerHTML = '<div class="empty-state">Belum ada transaksi</div>';
+    const isFiltered = currentSearchQuery || currentCatFilter !== 'all';
+    list.innerHTML = `
+      <div class="empty-state-full">
+        <div class="empty-icon">💸</div>
+        <p class="empty-title">${isFiltered ? 'Tidak ada hasil' : 'Belum ada transaksi'}</p>
+        <p class="empty-sub">${isFiltered ? 'Coba ubah pencarian atau filter' : 'Mulai catat pemasukan atau pengeluaranmu'}</p>
+        ${!isFiltered ? '<button class="empty-cta" id="empty-add-btn">+ Tambah Transaksi</button>' : ''}
+      </div>`;
+    document.getElementById('empty-add-btn')?.addEventListener('click', () => {
+      refreshCatSelect();
+      openModal(modalExpense);
+    });
     return;
   }
 
@@ -898,7 +963,7 @@ document.getElementById('modal-cat-save').addEventListener('click', () => {
     id: state.nextId++, name, budget, spent: 0, color: state.selectedColor,
     isSaving, interestRate: 0, firstSavedAt: null
   });
-  closeModal(modalCat); renderBudget(); renderDashboard(); saveState();
+  closeModal(modalCat); renderBudget(); renderDashboard(); refreshCatFilterSelect(); saveState();
 });
 
 // Confirm dialog
@@ -948,6 +1013,183 @@ toggleBtn.addEventListener('click', () => {
 });
 
 // =====================
+// INSIGHTS
+// =====================
+function renderInsights() {
+  const row = document.getElementById('insights-row');
+  if (!row) return;
+
+  const totalIncome = getTotalIncome();
+  const totalSpent  = getTotalSpent();
+  const totalSaving = getTotalSaving();
+  const remaining   = totalIncome - totalSpent - totalSaving;
+  const usagePct    = totalIncome > 0 ? (totalSpent / totalIncome) * 100 : 0;
+
+  row.innerHTML = '';
+  if (totalIncome === 0 && totalSpent === 0) return;
+
+  const insights = [];
+
+  if (usagePct > 100) {
+    insights.push({ icon: '🔴', text: `Kamu overspend ${Math.round(usagePct - 100)}% dari pemasukan bulan ini`, type: 'danger' });
+  } else if (usagePct > 80) {
+    insights.push({ icon: '⚡', text: `${Math.round(usagePct)}% budget sudah terpakai — hampir habis!`, type: 'warning' });
+  }
+
+  const expCats = state.categories.filter(c => !c.isSaving && c.spent > 0).sort((a,b) => b.spent - a.spent);
+  if (expCats.length > 0 && totalSpent > 0) {
+    const top    = expCats[0];
+    const topPct = Math.round((top.spent / totalSpent) * 100);
+    if (topPct >= 40) {
+      insights.push({ icon: '📊', text: `Kategori "${top.name}" mendominasi ${topPct}% dari total pengeluaranmu`, type: 'info' });
+    }
+  }
+
+  const overBudgetCats = state.categories.filter(c => c.budget > 0 && c.spent > c.budget);
+  if (overBudgetCats.length > 0) {
+    const cat = overBudgetCats[0];
+    insights.push({ icon: '⚠️', text: `"${cat.name}" melebihi alokasi sebesar ${formatRp(cat.spent - cat.budget)}`, type: 'warning' });
+  }
+
+  if (remaining > 0 && totalSpent > 0) {
+    const today      = new Date();
+    const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+    const dayOfMonth = today.getDate();
+    const daysLeft   = daysInMonth - dayOfMonth;
+    const dailyAvg   = totalSpent / dayOfMonth;
+    if (dailyAvg > 0) {
+      const daysCanAfford = Math.floor(remaining / dailyAvg);
+      if (daysCanAfford < daysLeft) {
+        insights.push({ icon: '⏳', text: `Sisa budget hanya cukup ~${daysCanAfford} hari lagi dengan rata-rata pengeluaran saat ini`, type: 'warning' });
+      } else if (insights.length < 2) {
+        insights.push({ icon: '✅', text: `Budget aman! Sisa ${formatRp(remaining)} cukup untuk ${daysLeft} hari ke depan`, type: 'success' });
+      }
+    }
+  }
+
+  if (insights.length === 0) return;
+
+  insights.slice(0, 3).forEach((ins, i) => {
+    const card = document.createElement('div');
+    card.className = `insight-card insight-${ins.type}`;
+    card.style.animationDelay = `${i * 0.06}s`;
+    card.innerHTML = `<span class="insight-icon">${ins.icon}</span><span class="insight-text">${ins.text}</span>`;
+    row.appendChild(card);
+  });
+}
+
+// =====================
+// SEARCH & CAT FILTER
+// =====================
+function refreshCatFilterSelect() {
+  const sel = document.getElementById('trx-cat-filter');
+  if (!sel) return;
+  const prev = sel.value;
+  sel.innerHTML = '<option value="all">Semua Kategori</option>';
+  state.categories.forEach(cat => {
+    const opt = document.createElement('option');
+    opt.value = cat.id; opt.textContent = cat.name;
+    sel.appendChild(opt);
+  });
+  sel.value = prev;
+}
+
+document.getElementById('trx-search').addEventListener('input', e => {
+  currentSearchQuery = e.target.value.trim().toLowerCase();
+  document.getElementById('trx-search-clear').classList.toggle('hidden', !currentSearchQuery);
+  renderTransactions();
+});
+
+document.getElementById('trx-search-clear').addEventListener('click', () => {
+  document.getElementById('trx-search').value = '';
+  currentSearchQuery = '';
+  document.getElementById('trx-search-clear').classList.add('hidden');
+  renderTransactions();
+});
+
+document.getElementById('trx-cat-filter').addEventListener('change', e => {
+  currentCatFilter = e.target.value;
+  renderTransactions();
+});
+
+// =====================
+// TIME FILTER TABS
+// =====================
+document.querySelectorAll('.time-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.time-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    currentTimeFilter = tab.dataset.period;
+    renderWeeklyChart();
+  });
+});
+
+// =====================
+// EXPORT CSV
+// =====================
+function exportCSV() {
+  if (!state.transactions.length) { alert('Belum ada transaksi untuk diekspor.'); return; }
+  const headers = ['Tanggal','Keterangan','Tipe','Kategori','Jumlah (Rp)'];
+  const rows = state.transactions.map(t => {
+    const cat = state.categories.find(c => c.id === t.catId);
+    return [t.date, `"${t.name}"`, t.type === 'income' ? 'Pemasukan' : 'Pengeluaran',
+      t.type === 'income' ? '-' : (cat?.name || 'Lainnya'), t.amount].join(',');
+  });
+  const csv  = [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = `finly-transaksi-${new Date().toLocaleDateString('id-ID').replace(/\//g,'-')}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+document.getElementById('export-csv-btn').addEventListener('click', exportCSV);
+
+// =====================
+// BACKUP & RESTORE
+// =====================
+function exportBackup() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = `finly-backup-${new Date().toLocaleDateString('id-ID').replace(/\//g,'-')}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+document.getElementById('backup-btn').addEventListener('click', exportBackup);
+
+document.getElementById('restore-btn').addEventListener('click', () => {
+  document.getElementById('restore-file').click();
+});
+
+document.getElementById('restore-file').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const imported = JSON.parse(ev.target.result);
+      if (!imported.categories || !imported.transactions) { alert('File backup tidak valid.'); return; }
+      showConfirm('Restore data dari backup? Data saat ini akan digantikan.', () => {
+        state = imported;
+        saveState();
+        applyTheme(state.theme || 'dark');
+        document.getElementById('income-input').value = state.income > 0 ? state.income.toLocaleString('id-ID') : '';
+        if (state.period) document.getElementById('income-period').value = state.period;
+        refreshCatFilterSelect();
+        renderDashboard(); renderBudget(); renderTransactions(); renderCalendar();
+      });
+    } catch { alert('File backup rusak atau tidak valid.'); }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+// =====================
 // INIT
 // =====================
 loadState();
@@ -965,3 +1207,4 @@ renderDashboard();
 renderBudget();
 renderTransactions();
 renderCalendar();
+refreshCatFilterSelect();
