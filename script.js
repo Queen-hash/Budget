@@ -807,32 +807,43 @@ document.getElementById('cal-next').addEventListener('click', () => { calMonth++
 // =====================
 const PAGE_TITLES = { dashboard: 'Dashboard', transactions: 'Transaksi', budget: 'Budget', calendar: 'Kalender', settings: 'Pengaturan' };
 
+function navigateTo(page) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.mobile-nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelector(`.nav-item[data-page="${page}"]`)?.classList.add('active');
+  document.querySelector(`.mobile-nav-item[data-page="${page}"]`)?.classList.add('active');
+  document.getElementById('page-' + page).classList.add('active');
+  document.getElementById('topbar-title').textContent = PAGE_TITLES[page] || page;
+  if (page === 'transactions') renderTransactions();
+  if (page === 'budget')       renderBudget();
+  if (page === 'calendar')     renderCalendar();
+}
+
 document.querySelectorAll('.nav-item').forEach(item => {
   item.addEventListener('click', e => {
     e.preventDefault();
-    const page = item.dataset.page;
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    item.classList.add('active');
-    document.getElementById('page-' + page).classList.add('active');
-    document.getElementById('topbar-title').textContent = PAGE_TITLES[page] || page;
-    if (page === 'transactions') renderTransactions();
-    if (page === 'budget')       renderBudget();
-    if (page === 'calendar')     renderCalendar();
+    navigateTo(item.dataset.page);
   });
+});
+
+document.querySelectorAll('.mobile-nav-item[data-page]').forEach(item => {
+  item.addEventListener('click', e => {
+    e.preventDefault();
+    navigateTo(item.dataset.page);
+  });
+});
+
+document.getElementById('mobile-add-btn').addEventListener('click', e => {
+  e.preventDefault();
+  document.getElementById('add-expense-btn').click();
 });
 
 // See all link
 document.querySelectorAll('.see-all').forEach(link => {
   link.addEventListener('click', e => {
     e.preventDefault();
-    const page = link.dataset.page;
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.querySelector(`[data-page="${page}"]`)?.classList.add('active');
-    document.getElementById('page-' + page).classList.add('active');
-    document.getElementById('topbar-title').textContent = PAGE_TITLES[page];
-    if (page === 'transactions') renderTransactions();
+    navigateTo(link.dataset.page);
   });
 });
 
