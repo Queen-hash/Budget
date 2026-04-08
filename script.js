@@ -839,6 +839,10 @@ document.getElementById('mobile-add-btn').addEventListener('click', e => {
   document.getElementById('add-expense-btn').click();
 });
 
+document.getElementById('mobile-settings-btn').addEventListener('click', () => {
+  navigateTo('settings');
+});
+
 // See all link
 document.querySelectorAll('.see-all').forEach(link => {
   link.addEventListener('click', e => {
