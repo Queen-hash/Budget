@@ -904,8 +904,9 @@ document.getElementById('modal-income-save').addEventListener('click', () => {
   const name   = document.getElementById('inc-name').value.trim();
   const amount = parseFloat(document.getElementById('inc-amount').value) || 0;
   if (!name || !amount) return;
+  const newId = state.nextTrxId;
   state.transactions.push({ id: state.nextTrxId++, name, amount, catId: null, type: 'income', date: todayStr() });
-  closeModal(modalIncome); renderDashboard(); saveState();
+  closeModal(modalIncome); renderDashboard(); renderTransactions(); highlightNewTrx(newId); saveState();
 });
 
 // Modal pengeluaran
@@ -940,8 +941,9 @@ document.getElementById('modal-expense-save').addEventListener('click', () => {
       cat.firstSavedAt = Date.now();
     }
   }
+  const newId = state.nextTrxId;
   state.transactions.push({ id: state.nextTrxId++, name, amount, catId, type: 'expense', date: todayStr() });
-  closeModal(modalExpense); renderDashboard(); saveState();
+  closeModal(modalExpense); renderDashboard(); renderTransactions(); highlightNewTrx(newId); saveState();
 });
 
 // Modal kategori
@@ -1165,6 +1167,17 @@ document.getElementById('backup-btn').addEventListener('click', exportBackup);
 document.getElementById('restore-btn').addEventListener('click', () => {
   document.getElementById('restore-file').click();
 });
+
+function highlightNewTrx(id) {
+  requestAnimationFrame(() => {
+    const btn = document.querySelector(`.trx-delete[data-id="${id}"]`);
+    if (!btn) return;
+    const item = btn.closest('.trx-item');
+    if (!item) return;
+    item.classList.add('trx-new');
+    setTimeout(() => item.classList.remove('trx-new'), 1800);
+  });
+}
 
 document.getElementById('restore-file').addEventListener('change', e => {
   const file = e.target.files[0];
