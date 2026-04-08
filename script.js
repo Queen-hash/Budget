@@ -28,10 +28,10 @@ const CAT_EMOJI = {
 };
 
 function formatRp(n) {
-  n = Math.round(n);
-  if (n >= 1000000) return 'Rp ' + (n/1000000).toFixed(1) + 'jt';
-  if (n >= 1000)    return 'Rp ' + (n/1000).toFixed(0) + 'rb';
-  return 'Rp ' + n.toLocaleString('id-ID');
+  const neg = n < 0;
+  n = Math.abs(Math.round(n));
+  const result = 'Rp ' + n.toLocaleString('id-ID');
+  return neg ? '-' + result : result;
 }
 
 function todayStr() {
@@ -74,8 +74,8 @@ function calcInterest(cat) {
   if (!cat.firstSavedAt) return 0;
   const principal = cat.spent;
   if (principal <= 0) return 0;
-  const days = Math.floor((Date.now() - new Date(cat.firstSavedAt).getTime()) / (1000 * 60 * 60 * 24));
-  if (days <= 0) return 0;
+  const msPerDay = 1000 * 60 * 60 * 24;
+const days = Math.max(1, Math.floor((Date.now() - new Date(cat.firstSavedAt).getTime()) / msPerDay));
   const r = cat.interestRate / 100;
   return principal * (Math.pow(1 + r / 365, days) - 1);
 }
@@ -572,6 +572,13 @@ function renderBudget() {
       if (cat) { cat.budget = parseFloat(e.target.value) || 0; renderBudget(); renderDashboard(); saveState(); }
     });
   });
+
+  list.querySelectorAll('.interest-input').forEach(input => {
+  input.addEventListener('change', e => {
+    const cat = state.categories.find(c => c.id === parseInt(e.target.dataset.id));
+    if (cat) { cat.interestRate = parseFloat(e.target.value) || 0; renderDashboard(); saveState(); }
+  });
+});
 
   // Interest rate input
   list.querySelectorAll('.saving-interest-input').forEach(input => {
