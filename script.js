@@ -1,6 +1,3 @@
-// =====================
-// STATE
-// =====================
 let state = {
   income: 0,
   period: 'bulan',
@@ -59,13 +56,9 @@ function getWeekNum(dateStr) {
 function saveState() { localStorage.setItem('finlyV1', JSON.stringify(state)); }
 function loadState() { const s = localStorage.getItem('finlyV1'); if (s) state = JSON.parse(s); }
 
-// =====================
-// COMPUTED
-// =====================
 function getExtraIncome() { return state.transactions.filter(t => t.type === 'income').reduce((s,t) => s+t.amount, 0); }
 function getTotalIncome()  { return state.income + getExtraIncome(); }
 
-// Pengeluaran = semua expense KECUALI kategori tabungan
 function getTotalSpent() {
   return state.transactions.filter(t => {
     if (t.type !== 'expense') return false;
@@ -74,13 +67,10 @@ function getTotalSpent() {
   }).reduce((s,t) => s+t.amount, 0);
 }
 
-// Total uang yang masuk ke semua kategori tabungan
 function getTotalSaving() {
   return state.categories.filter(c => c.isSaving).reduce((s,c) => s + c.spent, 0);
 }
 
-// Hitung bunga harian compound per kategori tabungan
-// Rumus: A = P * (1 + r/365)^n  → bunga = A - P
 function calcInterest(cat) {
   if (!cat.isSaving || !cat.interestRate || cat.interestRate <= 0) return 0;
   if (!cat.firstSavedAt) return 0;
@@ -97,9 +87,6 @@ function getTotalInterest() {
   return state.categories.filter(c => c.isSaving).reduce((s,c) => s + calcInterest(c), 0);
 }
 
-// =====================
-// RENDER DASHBOARD
-// =====================
 function renderDashboard() {
   const totalIncome = getTotalIncome();
   const extra       = getExtraIncome();
@@ -132,7 +119,6 @@ function renderDashboard() {
   document.getElementById('remaining-label').textContent =
     remaining < 0 ? '⚠ Defisit' : 'Tersedia';
 
-  // Notif — based only on non-saving spending
   const notif = document.getElementById('budget-notif');
   if (totalSpent > totalIncome && totalIncome > 0) {
     notif.innerHTML = `⚠️ Pengeluaran melebihi pemasukan sebesar <strong>${formatRp(totalSpent - totalIncome)}</strong>`;
@@ -436,9 +422,6 @@ function renderRecent() {
   });
 }
 
-// =====================
-// RENDER TRANSACTIONS
-// =====================
 let currentFilter      = 'all';
 let currentSearchQuery = '';
 let currentCatFilter   = 'all';
@@ -525,7 +508,7 @@ function renderTransactions() {
           const cat = state.categories.find(c => c.id === trx.catId);
           if (cat) {
             cat.spent = Math.max(0, cat.spent - trx.amount);
-            // Reset firstSavedAt jika tidak ada lagi transaksi tabungan
+            
             if (cat.isSaving) {
               const remaining = state.transactions.filter(t => t.id !== id && t.catId === cat.id && t.type === 'expense');
               if (!remaining.length) cat.firstSavedAt = null;
@@ -539,7 +522,6 @@ function renderTransactions() {
   });
 }
 
-// Filter buttons
 document.querySelectorAll('.filter-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -549,9 +531,6 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
   });
 });
 
-// =====================
-// RENDER BUDGET
-// =====================
 function renderBudget() {
   const list = document.getElementById('budget-list');
   const focusedId    = document.activeElement?.dataset?.id;
@@ -631,7 +610,6 @@ function renderBudget() {
     if (el) el.focus();
   }
 
-  // Budget input
   list.querySelectorAll('.budget-input[data-field="budget"]').forEach(input => {
     input.addEventListener('change', e => {
       const cat = state.categories.find(c => c.id === parseInt(e.target.dataset.id));
@@ -646,7 +624,6 @@ function renderBudget() {
   });
 });
 
-  // Interest rate input
   list.querySelectorAll('.saving-interest-input').forEach(input => {
     input.addEventListener('change', e => {
       const cat = state.categories.find(c => c.id === parseInt(e.target.dataset.id));
@@ -654,7 +631,6 @@ function renderBudget() {
     });
   });
 
-  // Saving toggle
   list.querySelectorAll('.saving-toggle').forEach(chk => {
     chk.addEventListener('change', e => {
       const cat = state.categories.find(c => c.id === parseInt(e.target.dataset.id));
@@ -666,7 +642,6 @@ function renderBudget() {
     });
   });
 
-  // Delete
   list.querySelectorAll('.budget-delete').forEach(btn => {
     btn.addEventListener('click', e => {
       const id  = parseInt(e.target.dataset.id);
@@ -679,9 +654,6 @@ function renderBudget() {
   });
 }
 
-// =====================
-// CALENDAR
-// =====================
 let calYear  = new Date().getFullYear();
 let calMonth = new Date().getMonth();
 const tooltip = document.getElementById('cal-tooltip');
@@ -802,9 +774,6 @@ function showCalDetail(dateStr, trxs) {
 document.getElementById('cal-prev').addEventListener('click', () => { calMonth--; if (calMonth < 0) { calMonth=11; calYear--; } renderCalendar(); });
 document.getElementById('cal-next').addEventListener('click', () => { calMonth++; if (calMonth > 11) { calMonth=0; calYear++; } renderCalendar(); });
 
-// =====================
-// NAVIGATION
-// =====================
 const PAGE_TITLES = { dashboard: 'Dashboard', transactions: 'Transaksi', budget: 'Budget', calendar: 'Kalender', settings: 'Pengaturan' };
 
 function navigateTo(page) {
@@ -843,7 +812,6 @@ document.getElementById('mobile-settings-btn').addEventListener('click', () => {
   navigateTo('settings');
 });
 
-// See all link
 document.querySelectorAll('.see-all').forEach(link => {
   link.addEventListener('click', e => {
     e.preventDefault();
@@ -851,9 +819,6 @@ document.querySelectorAll('.see-all').forEach(link => {
   });
 });
 
-// =====================
-// INCOME INPUT
-// =====================
 document.getElementById('income-input').addEventListener('input', e => {
   state.income = parseFloat(e.target.value) || 0;
   renderDashboard(); saveState();
@@ -871,9 +836,6 @@ document.getElementById('income-period').addEventListener('change', e => {
   state.period = e.target.value; saveState();
 });
 
-// =====================
-// THEME
-// =====================
 function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
   document.querySelector('.theme-icon').textContent = theme === 'dark' ? '☀️' : '🌙';
@@ -886,13 +848,9 @@ function applyTheme(theme) {
 document.getElementById('theme-toggle').addEventListener('click',   () => { applyTheme(state.theme === 'dark' ? 'light' : 'dark'); saveState(); });
 document.getElementById('theme-toggle-2').addEventListener('click', () => { applyTheme(state.theme === 'dark' ? 'light' : 'dark'); saveState(); });
 
-// =====================
-// MODALS
-// =====================
 function openModal(m)  { m.classList.remove('hidden'); requestAnimationFrame(() => requestAnimationFrame(() => m.classList.add('visible'))); }
 function closeModal(m) { m.classList.remove('visible'); setTimeout(() => m.classList.add('hidden'), 300); }
 
-// Color options
 const colorOpts = document.getElementById('color-options');
 COLORS.forEach(color => {
   const btn = document.createElement('div');
@@ -907,7 +865,6 @@ COLORS.forEach(color => {
   colorOpts.appendChild(btn);
 });
 
-// Modal pemasukan
 const modalIncome = document.getElementById('modal-income');
 document.getElementById('add-income-btn').addEventListener('click', () => {
   document.getElementById('inc-name').value = '';
@@ -925,7 +882,6 @@ document.getElementById('modal-income-save').addEventListener('click', () => {
   closeModal(modalIncome); renderDashboard(); renderTransactions(); highlightNewTrx(newId); saveState();
 });
 
-// Modal pengeluaran
 const modalExpense = document.getElementById('modal-expense');
 function refreshCatSelect() {
   const sel = document.getElementById('exp-category');
@@ -952,7 +908,7 @@ document.getElementById('modal-expense-save').addEventListener('click', () => {
   const cat = state.categories.find(c => c.id === catId);
   if (cat) {
     cat.spent += amount;
-    // Set firstSavedAt pada transaksi pertama ke kategori tabungan
+    
     if (cat.isSaving && !cat.firstSavedAt) {
       cat.firstSavedAt = Date.now();
     }
@@ -962,7 +918,6 @@ document.getElementById('modal-expense-save').addEventListener('click', () => {
   closeModal(modalExpense); renderDashboard(); renderTransactions(); highlightNewTrx(newId); saveState();
 });
 
-// Modal kategori
 const modalCat = document.getElementById('modal-cat');
 document.getElementById('add-category-btn').addEventListener('click', () => {
   document.getElementById('cat-name').value = '';
@@ -984,7 +939,6 @@ document.getElementById('modal-cat-save').addEventListener('click', () => {
   closeModal(modalCat); renderBudget(); renderDashboard(); refreshCatFilterSelect(); saveState();
 });
 
-// Confirm dialog
 function showConfirm(message, onConfirm) {
   const overlay = document.getElementById('confirm-overlay');
   document.getElementById('confirm-message').textContent = message;
@@ -1000,7 +954,6 @@ function showConfirm(message, onConfirm) {
   newNo.addEventListener('click',  () => cleanup());
 }
 
-// Reset
 document.getElementById('reset-btn').addEventListener('click', () => {
   showConfirm('Reset semua data? Tindakan ini tidak bisa dibatalkan.', () => {
     localStorage.removeItem('finlyV1');
@@ -1014,9 +967,6 @@ document.addEventListener('keydown', e => {
   }
 });
 
-// =====================
-// SIDEBAR TOGGLE
-// =====================
 const sidebarEl  = document.querySelector('.sidebar');
 const mainWrapEl = document.querySelector('.main-wrap');
 const toggleBtn  = document.getElementById('sidebar-toggle');
@@ -1030,9 +980,6 @@ toggleBtn.addEventListener('click', () => {
   mainWrapEl.classList.toggle('sidebar-collapsed', sidebarCollapsed);
 });
 
-// =====================
-// INSIGHTS
-// =====================
 function renderInsights() {
   const row = document.getElementById('insights-row');
   if (!row) return;
@@ -1096,9 +1043,6 @@ function renderInsights() {
   });
 }
 
-// =====================
-// SEARCH & CAT FILTER
-// =====================
 function refreshCatFilterSelect() {
   const sel = document.getElementById('trx-cat-filter');
   if (!sel) return;
@@ -1130,9 +1074,6 @@ document.getElementById('trx-cat-filter').addEventListener('change', e => {
   renderTransactions();
 });
 
-// =====================
-// TIME FILTER TABS
-// =====================
 document.querySelectorAll('.time-tab').forEach(tab => {
   tab.addEventListener('click', () => {
     document.querySelectorAll('.time-tab').forEach(t => t.classList.remove('active'));
@@ -1142,9 +1083,6 @@ document.querySelectorAll('.time-tab').forEach(tab => {
   });
 });
 
-// =====================
-// EXPORT CSV
-// =====================
 function exportCSV() {
   if (!state.transactions.length) { alert('Belum ada transaksi untuk diekspor.'); return; }
   const headers = ['Tanggal','Keterangan','Tipe','Kategori','Jumlah (Rp)'];
@@ -1165,9 +1103,6 @@ function exportCSV() {
 
 document.getElementById('export-csv-btn').addEventListener('click', exportCSV);
 
-// =====================
-// BACKUP & RESTORE
-// =====================
 function exportBackup() {
   const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
   const url  = URL.createObjectURL(blob);
@@ -1218,9 +1153,6 @@ document.getElementById('restore-file').addEventListener('change', e => {
   e.target.value = '';
 });
 
-// =====================
-// INIT
-// =====================
 loadState();
 applyTheme(state.theme);
 
