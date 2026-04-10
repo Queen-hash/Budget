@@ -1574,6 +1574,11 @@ body {
   margin-bottom: 1.25rem;
 }
 
+/* 3-card wallet layout */
+.wallet-row-3 {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
 .wallet-card {
   background: var(--bg2);
   border: 1px solid var(--border);
@@ -1640,9 +1645,23 @@ body {
   border-color: rgba(167,139,250,0.25);
 }
 
+.wallet-badge.saving {
+  background: rgba(251,191,36,0.12);
+  color: #fbbf24;
+  border-color: rgba(251,191,36,0.25);
+}
+
+.wallet-saving-card::before {
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+
 @media (max-width: 600px) {
   .wallet-row { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
-  .wallet-val { font-size: 0.95rem; }
+  .wallet-row-3 { grid-template-columns: 1fr 1fr; }
+  .wallet-row-3 .wallet-saving-card { grid-column: 1 / -1; }
+  .wallet-val { font-size: 0.9rem; }
+  .wallet-label { font-size: 10px; }
+  .wallet-icon { font-size: 1.2rem; }
 }
 
 /* ── Net Flow Chart ────────────────────────────── */
@@ -1814,4 +1833,56 @@ body {
   background: rgba(0,0,0,0.05);
   border-color: rgba(0,0,0,0.1);
   color: #666;
+}
+
+
+/* ── Tarik Tunai Button & Modal ────────────────────────────── */
+.topbar-btn.transfer-btn {
+  background: linear-gradient(135deg, rgba(251,191,36,0.15), rgba(245,87,108,0.1));
+  border-color: rgba(251,191,36,0.35);
+  color: #fbbf24;
+}
+
+.topbar-btn.transfer-btn:hover {
+  background: linear-gradient(135deg, rgba(251,191,36,0.25), rgba(245,87,108,0.18));
+  border-color: #fbbf24;
+  color: #fbbf24;
+}
+
+.mobile-choice-btn.transfer-choice {
+  background: rgba(251,191,36,0.1);
+  border-color: rgba(251,191,36,0.3);
+  color: #fbbf24;
+}
+
+.transfer-save-btn {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b) !important;
+}
+
+.transfer-info-text {
+  font-size: 11px;
+  color: var(--text2);
+  background: rgba(251,191,36,0.07);
+  border: 1px solid rgba(251,191,36,0.2);
+  border-radius: 8px;
+  padding: 0.6rem 0.8rem;
+  line-height: 1.5;
+  margin-top: 0.25rem;
+}
+
+[data-theme="light"] .transfer-info-text {
+  background: rgba(251,191,36,0.08);
+  border-color: rgba(245,158,11,0.25);
+}
+
+/* Transfer item row style */
+.trx-item.trx-transfer {
+  border-left: 2px solid rgba(251,191,36,0.4);
+}
+
+/* Mobile: ensure topbar buttons visible */
+@media (max-width: 600px) {
+  .topbar-btn.transfer-btn {
+    display: none; /* hidden on mobile — use bottom sheet instead */
+  }
 }
