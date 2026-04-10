@@ -9,8 +9,11 @@ let state = {
     { id: 5, name: 'Lainnya',   budget: 0, spent: 0, color: '#ffecd2', isSaving: false, interestRate: 0, firstSavedAt: null },
   ],
   transactions: [],
+  // transfers: array of { id, amount, note, date } — internal Digital→Cash moves
+  transfers: [],
   nextId: 6,
   nextTrxId: 1,
+  nextTransferId: 1,
   selectedColor: '#43e97b',
   theme: 'dark',
 };
@@ -73,7 +76,22 @@ function getWeekNum(dateStr) {
 }
 
 function saveState() { localStorage.setItem('finlyV1', JSON.stringify(state)); }
-function loadState() { const s = localStorage.getItem('finlyV1'); if (s) state = JSON.parse(s); }
+function loadState() {
+  const s = localStorage.getItem('finlyV1');
+  if (s) {
+    const saved = JSON.parse(s);
+    state = { ...state, ...saved };
+    // Migrasi: pastikan transfers ada (data lama tidak punya)
+    if (!state.transfers) state.transfers = [];
+    if (!state.nextTransferId) state.nextTransferId = 1;
+    // Migrasi: default walletType = 'digital' untuk data lama
+    state.transactions = state.transactions.map(t => ({
+      transactionType: t.type || 'expense',
+      walletType: t.paymentMethod ? (PAYMENT_METHODS[t.paymentMethod]?.walletType || 'digital') : (t.walletType || 'digital'),
+      ...t,
+    }));
+  }
+}
 
 function getExtraIncome() { return state.transactions.filter(t => t.type === 'income').reduce((s,t) => s+t.amount, 0); }
 function getTotalIncome()  { return state.income + getExtraIncome(); }
@@ -114,13 +132,26 @@ function resolveWalletType(t) {
 }
 
 function getWalletBalance(type) {
-  const income  = state.transactions
-    .filter(t => t.type === 'income'  && resolveWalletType(t) === type)
+  // state.income (gaji pokok) selalu masuk ke Digital
+  const baseIncome = type === 'digital' ? state.income : 0;
+
+  // Transaksi income tambahan ikut walletType-nya
+  const trxIncome = state.transactions
+    .filter(t => t.type === 'income' && resolveWalletType(t) === type)
     .reduce((s, t) => s + t.amount, 0);
-  const expense = state.transactions
+
+  // Pengeluaran biasa (termasuk saving yang expense) dikurangi dari walletType-nya
+  const trxExpense = state.transactions
     .filter(t => t.type === 'expense' && resolveWalletType(t) === type)
     .reduce((s, t) => s + t.amount, 0);
-  return income - expense;
+
+  // Tarik Tunai: Digital berkurang, Cash bertambah (bukan pengeluaran)
+  const transfersOut = type === 'digital'
+    ? (state.transfers || []).reduce((s, t) => s + t.amount, 0) : 0;
+  const transfersIn  = type === 'cash'
+    ? (state.transfers || []).reduce((s, t) => s + t.amount, 0) : 0;
+
+  return baseIncome + trxIncome - trxExpense - transfersOut + transfersIn;
 }
 
 // Helper loading state tombol Simpan
@@ -142,9 +173,14 @@ function renderDashboard() {
   const totalSaving = getTotalSaving();
   const totalInterest = getTotalInterest();
   const savingWithInterest = totalSaving + totalInterest;
-  const remaining   = totalIncome - totalSpent - totalSaving;
-  const usagePct    = totalIncome > 0 ? Math.min((totalSpent / totalIncome) * 100, 100) : 0;
-  const savingPct   = totalIncome > 0 ? Math.min((totalSaving / totalIncome) * 100, 100) : 0;
+
+  // Sisa Budget = (Saldo Tunai + Saldo Digital) - Pengeluaran biasa
+  // Tabungan adalah aset terkunci, tidak masuk "uang jajan"
+  const cashBal    = getWalletBalance('cash');
+  const digitalBal = getWalletBalance('digital');
+  const remaining  = cashBal + digitalBal;          // saldo riil tersisa
+  const usagePct   = totalIncome > 0 ? Math.min((totalSpent / totalIncome) * 100, 100) : 0;
+  const savingPct  = totalIncome > 0 ? Math.min((totalSaving / totalIncome) * 100, 100) : 0;
 
   document.getElementById('extra-display').textContent    = formatRp(extra);
   document.getElementById('spent-display').textContent    = formatRp(totalSpent);
@@ -168,21 +204,23 @@ function renderDashboard() {
     remaining < 0 ? '⚠ Defisit' : 'Tersedia';
 
   const notif = document.getElementById('budget-notif');
-  if (totalSpent > totalIncome && totalIncome > 0) {
-    notif.innerHTML = `⚠️ Pengeluaran melebihi pemasukan sebesar <strong>${formatRp(totalSpent - totalIncome)}</strong>`;
+  if (remaining < 0) {
+    notif.innerHTML = `⚠️ Saldo defisit! Pengeluaran melebihi pemasukan sebesar <strong>${formatRp(Math.abs(remaining))}</strong>`;
     notif.className = 'budget-notif show danger';
-  } else if (usagePct >= 80 && totalIncome > 0) {
+  } else if (totalIncome > 0 && usagePct >= 80) {
     notif.innerHTML = `⚡ Sudah ${Math.round(usagePct)}% terpakai. Sisa <strong>${formatRp(remaining)}</strong>`;
     notif.className = 'budget-notif show warning';
   } else {
     notif.className = 'budget-notif';
   }
 
-  // Update wallet balance cards
+  // Update wallet balance cards (cashBal & digitalBal sudah dihitung di atas)
   const cashEl    = document.getElementById('wallet-cash-display');
   const digitalEl = document.getElementById('wallet-digital-display');
-  if (cashEl)    cashEl.textContent    = formatRp(getWalletBalance('cash'));
-  if (digitalEl) digitalEl.textContent = formatRp(getWalletBalance('digital'));
+  const savingEl  = document.getElementById('wallet-saving-display');
+  if (cashEl)    cashEl.textContent    = formatRp(cashBal);
+  if (digitalEl) digitalEl.textContent = formatRp(digitalBal);
+  if (savingEl)  savingEl.textContent  = formatRp(savingWithInterest);
 
   renderDonut(totalSpent);
   renderWeeklyChart();
@@ -642,7 +680,21 @@ let currentTimeFilter  = 'weekly';
 
 function renderTransactions() {
   const list = document.getElementById('trx-list');
-  let trxs   = [...state.transactions].reverse();
+
+  // Gabungkan transaksi biasa + transfers sebagai virtual items
+  const transferItems = (state.transfers || []).map(tr => ({
+    id: 'tr_' + tr.id,
+    name: tr.note || 'Tarik Tunai',
+    amount: tr.amount,
+    type: 'transfer',
+    catId: null,
+    date: tr.date,
+    paymentMethod: null,
+  }));
+
+  let trxs = [...state.transactions, ...transferItems].reverse();
+
+  // Filter: transfer tampil di semua / jika filter 'all'
   if (currentFilter !== 'all') trxs = trxs.filter(t => t.type === currentFilter);
   if (currentSearchQuery) trxs = trxs.filter(t => t.name.toLowerCase().includes(currentSearchQuery));
   if (currentCatFilter !== 'all') trxs = trxs.filter(t => t.catId === parseInt(currentCatFilter));
@@ -685,30 +737,44 @@ function renderTransactions() {
     list.appendChild(grpHeader);
 
     items.forEach(trx => {
+      const isTransfer = trx.type === 'transfer';
       const cat   = state.categories.find(c => c.id === trx.catId);
       const isInc = trx.type === 'income';
-      const emoji = isInc ? '💵' : (CAT_EMOJI[cat?.name] || '📦');
-      const bgColor = isInc
-        ? 'linear-gradient(135deg, rgba(67,233,123,0.2), rgba(56,249,215,0.2))'
-        : `${cat?.color || '#888'}22`;
+      const emoji = isTransfer ? '🔄'
+                  : isInc ? '💵'
+                  : (CAT_EMOJI[cat?.name] || '📦');
+      const bgColor = isTransfer
+        ? 'linear-gradient(135deg, rgba(251,191,36,0.18), rgba(245,87,108,0.12))'
+        : isInc
+          ? 'linear-gradient(135deg, rgba(67,233,123,0.2), rgba(56,249,215,0.2))'
+          : `${cat?.color || '#888'}22`;
 
-      const pmInfo  = getPaymentInfo(trx.paymentMethod || 'cash');
-      const pmLabel = `${pmInfo.icon} ${pmInfo.label}`;
+      const pmInfo  = (!isTransfer) ? getPaymentInfo(trx.paymentMethod || 'cash') : null;
+      const pmLabel = pmInfo ? `${pmInfo.icon} ${pmInfo.label}` : '';
+      const metaLabel = isTransfer ? 'Transfer Internal · Digital → Tunai'
+                      : isInc ? 'Pemasukan Tambahan'
+                      : (cat?.name || 'Lainnya');
+      const amountColor = isTransfer ? 'var(--text2)'
+                        : isInc ? 'var(--income)' : 'var(--expense)';
+      const amountPrefix = isTransfer ? '⇄' : (isInc ? '+' : '-');
+
       const el = document.createElement('div');
-      el.className = 'trx-item';
+      el.className = 'trx-item' + (isTransfer ? ' trx-transfer' : '');
       el.innerHTML = `
         <div class="trx-left">
           <div class="trx-icon" style="background:${bgColor}">${emoji}</div>
           <div>
-            <p class="trx-name">${trx.name} <span class="trx-pm-badge">${pmLabel}</span></p>
-            <p class="trx-meta">${isInc ? 'Pemasukan Tambahan' : (cat?.name || 'Lainnya')}</p>
+            <p class="trx-name">${trx.name}${pmLabel ? ` <span class="trx-pm-badge">${pmLabel}</span>` : ''}</p>
+            <p class="trx-meta">${metaLabel}</p>
           </div>
         </div>
         <div class="trx-right">
-          <span class="trx-amount" style="color:${isInc ? 'var(--income)' : 'var(--expense)'}">
-            ${isInc ? '+' : '-'} ${formatRp(trx.amount)}
+          <span class="trx-amount" style="color:${amountColor}">
+            ${amountPrefix} ${formatRp(trx.amount)}
           </span>
-          <button class="trx-delete" data-id="${trx.id}">×</button>
+          ${isTransfer
+            ? `<button class="trx-delete" data-transfer-id="${trx.id.replace('tr_','')}">×</button>`
+            : `<button class="trx-delete" data-id="${trx.id}">×</button>`}
         </div>`;
       list.appendChild(el);
     });
@@ -716,6 +782,17 @@ function renderTransactions() {
 
   list.querySelectorAll('.trx-delete').forEach(btn => {
     btn.addEventListener('click', e => {
+      // Handle hapus transfer internal
+      if (e.target.dataset.transferId !== undefined) {
+        const tid = parseInt(e.target.dataset.transferId);
+        const tr  = (state.transfers || []).find(t => t.id === tid);
+        showConfirm(`Hapus transfer "${tr?.note || 'Tarik Tunai'}"?`, () => {
+          state.transfers = state.transfers.filter(t => t.id !== tid);
+          renderTransactions(); renderDashboard(); saveState();
+        });
+        return;
+      }
+      // Handle hapus transaksi biasa
       const id  = parseInt(e.target.dataset.id);
       const trx = state.transactions.find(t => t.id === id);
       showConfirm(`Hapus "${trx?.name}"?`, () => {
@@ -723,7 +800,6 @@ function renderTransactions() {
           const cat = state.categories.find(c => c.id === trx.catId);
           if (cat) {
             cat.spent = Math.max(0, cat.spent - trx.amount);
-            
             if (cat.isSaving) {
               const remaining = state.transactions.filter(t => t.id !== id && t.catId === cat.id && t.type === 'expense');
               if (!remaining.length) cat.firstSavedAt = null;
@@ -1052,6 +1128,13 @@ document.getElementById('choice-expense').addEventListener('click', () => {
   openModal(modalExpense);
 });
 
+document.getElementById('choice-transfer').addEventListener('click', () => {
+  closeMobileChoice();
+  document.getElementById('transfer-amount').value = '';
+  document.getElementById('transfer-note').value   = '';
+  openModal(modalTransfer);
+});
+
 document.getElementById('choice-cancel').addEventListener('click', () => closeMobileChoice());
 
 document.getElementById('mobile-choice-overlay').addEventListener('click', e => {
@@ -1180,6 +1263,50 @@ document.getElementById('modal-expense-save').addEventListener('click', () => {
     closeModal(modalExpense); renderDashboard(); renderTransactions(); highlightNewTrx(newId); saveState();
   }, 400);
 });
+
+// ── Modal Tarik Tunai (Digital → Cash) ──────────────────────────
+const modalTransfer = document.getElementById('modal-transfer');
+document.getElementById('modal-transfer-close').addEventListener('click', () => closeModal(modalTransfer));
+modalTransfer.addEventListener('click', e => { if (e.target === modalTransfer) closeModal(modalTransfer); });
+
+document.getElementById('modal-transfer-save').addEventListener('click', () => {
+  const amount = parseFloat(document.getElementById('transfer-amount').value) || 0;
+  const note   = document.getElementById('transfer-note').value.trim() || 'Tarik Tunai';
+  if (!amount) return;
+
+  // Cegah tarik lebih dari saldo digital
+  const digitalBal = getWalletBalance('digital');
+  if (amount > digitalBal) {
+    alert(`Saldo Digital tidak cukup. Saldo saat ini: ${formatRp(digitalBal)}`);
+    return;
+  }
+
+  const btn = document.getElementById('modal-transfer-save');
+  setButtonLoading(btn, true);
+  setTimeout(() => {
+    state.transfers.push({
+      id: state.nextTransferId++,
+      amount,
+      note,
+      date: todayStr(),
+    });
+    setButtonLoading(btn, false);
+    closeModal(modalTransfer);
+    renderDashboard();
+    renderTransactions();
+    saveState();
+  }, 400);
+});
+
+// Tombol desktop "Tarik Tunai" di topbar
+const addTransferBtnDesk = document.getElementById('add-transfer-btn');
+if (addTransferBtnDesk) {
+  addTransferBtnDesk.addEventListener('click', () => {
+    document.getElementById('transfer-amount').value = '';
+    document.getElementById('transfer-note').value   = '';
+    openModal(modalTransfer);
+  });
+}
 
 const modalCat = document.getElementById('modal-cat');
 document.getElementById('add-category-btn').addEventListener('click', () => {
@@ -1347,14 +1474,18 @@ document.querySelectorAll('.time-tab').forEach(tab => {
 });
 
 function exportCSV() {
-  if (!state.transactions.length) { alert('Belum ada transaksi untuk diekspor.'); return; }
-  const headers = ['Tanggal','Keterangan','Tipe','Kategori','Jumlah (Rp)'];
+  if (!state.transactions.length && !state.transfers?.length) { alert('Belum ada transaksi untuk diekspor.'); return; }
+  const headers = ['Tanggal','Keterangan','Tipe','Kategori','Jumlah (Rp)','Metode'];
   const rows = state.transactions.map(t => {
     const cat = state.categories.find(c => c.id === t.catId);
+    const pm  = getPaymentInfo(t.paymentMethod || 'cash');
     return [t.date, `"${t.name}"`, t.type === 'income' ? 'Pemasukan' : 'Pengeluaran',
-      t.type === 'income' ? '-' : (cat?.name || 'Lainnya'), t.amount].join(',');
+      t.type === 'income' ? '-' : (cat?.name || 'Lainnya'), t.amount, pm.label].join(',');
   });
-  const csv  = [headers.join(','), ...rows].join('\n');
+  const transferRows = (state.transfers || []).map(t => {
+    return [t.date, `"${t.note || 'Tarik Tunai'}"`, 'Transfer Internal', 'Digital → Tunai', t.amount, '-'].join(',');
+  });
+  const csv  = [headers.join(','), ...rows, ...transferRows].join('\n');
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
@@ -1401,6 +1532,8 @@ document.getElementById('restore-file').addEventListener('change', e => {
     try {
       const imported = JSON.parse(ev.target.result);
       if (!imported.categories || !imported.transactions) { alert('File backup tidak valid.'); return; }
+        if (!imported.transfers) imported.transfers = [];
+        if (!imported.nextTransferId) imported.nextTransferId = 1;
       showConfirm('Restore data dari backup? Data saat ini akan digantikan.', () => {
         state = imported;
         saveState();
