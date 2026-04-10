@@ -1,0 +1,38 @@
+Saya punya aplikasi "Finly" (HTML/CSS/JS) yang perlu di-upgrade segera dengan fitur-fitur kritis berikut. Jangan tulis ulang seluruh aplikasi, tapi modifikasi file index.html, style.css, dan script.js secara spesifik sesuai instruksi ini:
+
+1. 🚨 PERBAIKAN KRITIS: BUG INPUT DI MOBILE (Android)
+   - Masalah: Di style.css pada media query (max-width: 600px), tombol #add-income-btn dan #add-expense-btn disembunyikan (display: none). Akibatnya di HP user tidak bisa input pemasukan.
+   - Tindakan: 
+     a. Hapus baris CSS yang menyembunyikan kedua tombol tersebut di mode mobile.
+     b. Di script.js, ubah event listener pada mobile-add-btn. Jangan langsung membuka modal Pengeluaran. Buat dia memunculkan pilihan cepat dulu: "Mau Input Pemasukan 💰 atau Pengeluaran 💸?". Setelah user memilih, baru arahkan ke modal yang sesuai (Income atau Expense).
+
+2. 💰 FITUR BARU: PEMISAHAN DOMPET (Cash vs Digital)
+   - Tujuan: User harus bisa melacak saldo "Tunai" dan "Digital" (E-wallet/Bank) secara terpisah.
+   - Tindakan:
+     a. Update struktur object transaksi di state.transactions (script.js) dengan menambahkan properti baru: walletType (nilai: 'cash' atau 'digital'). Default-kan ke 'cash' untuk data lama agar tidak error.
+     b. Di index.html, tambahkan elemen <select> di dalam modal "Tambah Pemasukan" dan "Tambah Pengeluaran" agar user wajib memilih jenis dompet saat input.
+     c. Update fungsi kalkulasi di Dashboard (renderDashboard): Tampilkan DUA kartu ringkasan terpisah di bagian atas: "Saldo Tunai" dan "Saldo Digital". Hitung masing-masing dengan memfilter transaksi berdasarkan walletType.
+     d. Pastikan fungsi helper baru seperti getWalletBalance(type) dibuat untuk mendukung ini.
+
+3. 📈 FITUR BARU: GRAFIK TREN ARUS KAS (Net Flow Chart)
+   - Tujuan: Menampilkan grafik garis yang menunjukkan akumulasi saldo harian. Garis NAIK jika pemasukan > pengeluaran hari itu, dan TURUN jika sebaliknya.
+   - Tindakan:
+     a. Buat fungsi baru renderNetFlowChart() di script.js.
+     b. Logika: Hitung saldo berjalan harian: SaldoHariIni = SaldoKemarin + (TotalMasukHariIni - TotalKeluarHariIni).
+     c. Render grafik ini menggunakan SVG (sama seperti grafik mingguan yang sudah ada) di bawah dashboard atau ganti tampilan breakdown jika ruang sempit. Beri judul "Tren Arus Kas".
+     d. Tambahkan logika visual: Jika garis tren turun selama 3 hari berturut-turut, tampilkan teks peringatan kecil di bawah grafik.
+
+4. ✨ POLISH UX: ANIMASI & LOADING
+   - Tujuan: Membuat aplikasi terasa lebih responsif dan premium.
+   - Tindakan:
+     a. Tambahkan status "Loading" pada tombol Simpan di modal. Saat diklik, ubah teks jadi "Menyimpan...", disable tombol sebentar, tampilkan spinner kecil, lalu kembalikan setelah data tersimpan sukses.
+     b. Perhalus animasi grafik SVG yang sudah ada (stroke-dashoffset) agar muncul smooth saat halaman dimuat (durasi ~0.8s).
+     c. Tambahkan indikator kecil di footer: "🟢 Data Tersimpan Lokal (Mode Offline)".
+
+CATATAN TEKNIS:
+- Tetap gunakan localStorage untuk penyimpanan data (tanpa backend).
+- Pertahankan variabel tema Dark/Light yang sudah ada di style.css.
+- Pastikan semua perubahan tetap responsif di mobile dan desktop.
+- Kode harus bersih, terkomentar, dan bebas bug.
+
+Mulailah dengan menganalisis logika transaksi di script.js, lalu terapkan perubahan langkah demi langkah. Konfirmasi setelah setiap langkah selesai dikerjakan.

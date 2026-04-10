@@ -150,6 +150,30 @@
           </div>
         </div>
 
+        <!-- Wallet row: Tunai & Digital -->
+        <div class="wallet-row">
+          <div class="wallet-card wallet-cash">
+            <div class="wallet-card-left">
+              <div class="wallet-icon">💵</div>
+              <div>
+                <p class="wallet-label">Saldo Tunai</p>
+                <p class="wallet-val" id="wallet-cash-display">Rp 0</p>
+              </div>
+            </div>
+            <div class="wallet-badge">Cash</div>
+          </div>
+          <div class="wallet-card wallet-digital">
+            <div class="wallet-card-left">
+              <div class="wallet-icon">📱</div>
+              <div>
+                <p class="wallet-label">Saldo Digital</p>
+                <p class="wallet-val" id="wallet-digital-display">Rp 0</p>
+              </div>
+            </div>
+            <div class="wallet-badge digital">Digital</div>
+          </div>
+        </div>
+
         <div class="insights-row" id="insights-row"></div>
 
         <div class="charts-row">
@@ -178,6 +202,16 @@
             </div>
             <div class="donut-legend" id="donut-legend"></div>
           </div>
+        </div>
+
+        <!-- Net Flow Chart -->
+        <div class="chart-card netflow-card">
+          <div class="chart-card-header">
+            <span class="chart-card-title">Tren Arus Kas</span>
+            <span class="netflow-subtitle">Akumulasi saldo harian (14 hari terakhir)</span>
+          </div>
+          <div id="netflow-chart"></div>
+          <p class="netflow-warning hidden" id="netflow-warning">⚠️ Arus kas turun selama 3 hari berturut-turut — perhatikan pengeluaranmu!</p>
         </div>
 
         <div class="bottom-row">
@@ -287,6 +321,9 @@
       </div>
 
     </main>
+
+    <!-- Offline indicator footer -->
+    <div class="offline-footer">🟢 Data Tersimpan Lokal (Mode Offline)</div>
   </div>
 </div>
 
@@ -315,6 +352,11 @@
       <input type="text" id="inc-name" placeholder="contoh: Bonus, Freelance" maxlength="40" />
       <label>Jumlah (Rp)</label>
       <input type="number" id="inc-amount" placeholder="0" min="0" />
+      <label>Dompet</label>
+      <select id="inc-wallet">
+        <option value="cash">💵 Tunai</option>
+        <option value="digital">📱 Digital (E-wallet / Bank)</option>
+      </select>
     </div>
     <button class="modal-save" id="modal-income-save">Simpan</button>
   </div>
@@ -333,6 +375,11 @@
       <input type="number" id="exp-amount" placeholder="0" min="0" />
       <label>Kategori</label>
       <select id="exp-category"></select>
+      <label>Dompet</label>
+      <select id="exp-wallet">
+        <option value="cash">💵 Tunai</option>
+        <option value="digital">📱 Digital (E-wallet / Bank)</option>
+      </select>
     </div>
     <button class="modal-save" id="modal-expense-save">Simpan</button>
   </div>
@@ -357,6 +404,16 @@
       </label>
     </div>
     <button class="modal-save" id="modal-cat-save">Simpan</button>
+  </div>
+</div>
+
+<!-- Mobile quick-add choice sheet -->
+<div class="mobile-choice-overlay hidden" id="mobile-choice-overlay">
+  <div class="mobile-choice-sheet">
+    <p class="mobile-choice-title">Tambah Transaksi</p>
+    <button class="mobile-choice-btn income-choice" id="choice-income">💰 Pemasukan</button>
+    <button class="mobile-choice-btn expense-choice" id="choice-expense">💸 Pengeluaran</button>
+    <button class="mobile-choice-cancel" id="choice-cancel">Batal</button>
   </div>
 </div>
 

@@ -87,6 +87,30 @@ function getTotalInterest() {
   return state.categories.filter(c => c.isSaving).reduce((s,c) => s + calcInterest(c), 0);
 }
 
+// Hitung saldo per jenis dompet (cash / digital)
+// Transaksi lama tanpa walletType didefaultkan ke 'cash'
+function getWalletBalance(type) {
+  const income  = state.transactions
+    .filter(t => t.type === 'income'  && (t.walletType || 'cash') === type)
+    .reduce((s, t) => s + t.amount, 0);
+  const expense = state.transactions
+    .filter(t => t.type === 'expense' && (t.walletType || 'cash') === type)
+    .reduce((s, t) => s + t.amount, 0);
+  return income - expense;
+}
+
+// Helper loading state tombol Simpan
+function setButtonLoading(btn, loading) {
+  if (loading) {
+    btn.dataset.originalText = btn.textContent;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="btn-spinner"></span> Menyimpan...';
+  } else {
+    btn.disabled = false;
+    btn.textContent = btn.dataset.originalText || 'Simpan';
+  }
+}
+
 function renderDashboard() {
   const totalIncome = getTotalIncome();
   const extra       = getExtraIncome();
@@ -130,8 +154,15 @@ function renderDashboard() {
     notif.className = 'budget-notif';
   }
 
+  // Update wallet balance cards
+  const cashEl    = document.getElementById('wallet-cash-display');
+  const digitalEl = document.getElementById('wallet-digital-display');
+  if (cashEl)    cashEl.textContent    = formatRp(getWalletBalance('cash'));
+  if (digitalEl) digitalEl.textContent = formatRp(getWalletBalance('digital'));
+
   renderDonut(totalSpent);
   renderWeeklyChart();
+  renderNetFlowChart();
   renderBreakdown();
   renderRecent();
   renderInsights();
@@ -343,6 +374,161 @@ function renderWeeklyChart() {
     legend.appendChild(item);
   });
   container.appendChild(legend);
+}
+
+// Grafik Tren Arus Kas — akumulasi saldo harian 14 hari terakhir
+function renderNetFlowChart() {
+  const container = document.getElementById('netflow-chart');
+  if (!container) return;
+  container.innerHTML = '';
+
+  const days   = 14;
+  const points = [];
+  let cumulative = 0;
+
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const dateStr  = d.toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric' });
+    const dayTrxs  = state.transactions.filter(t => t.date === dateStr);
+    const dayIn    = dayTrxs.filter(t => t.type === 'income').reduce((s,t) => s+t.amount, 0);
+    const dayOut   = dayTrxs.filter(t => t.type === 'expense').reduce((s,t) => s+t.amount, 0);
+    cumulative    += (dayIn - dayOut);
+    points.push({
+      val:   cumulative,
+      label: d.toLocaleDateString('id-ID', { day:'numeric', month:'short' }),
+    });
+  }
+
+  // Cek 3 hari berturut-turut turun
+  const warning = document.getElementById('netflow-warning');
+  let consecutiveDown = 0;
+  for (let i = points.length - 1; i > 0; i--) {
+    if (points[i].val < points[i - 1].val) consecutiveDown++;
+    else break;
+  }
+  if (warning) {
+    warning.classList.toggle('hidden', consecutiveDown < 3);
+  }
+
+  if (points.every(p => p.val === 0)) {
+    container.innerHTML = '<p style="text-align:center;color:var(--text2);font-size:12px;padding:2rem 0;font-family:\'DM Mono\',monospace;">Belum ada data — catat transaksi untuk melihat grafik</p>';
+    return;
+  }
+
+  const vals   = points.map(p => p.val);
+  const minVal = Math.min(...vals);
+  const maxVal = Math.max(...vals);
+  const range  = maxVal - minVal || 1;
+  const W = 500, H = 140, padX = 20, padY = 14;
+
+  function toX(i)   { return padX + (i / (points.length - 1)) * (W - padX * 2); }
+  function toY(v)   { return padY + (1 - (v - minVal) / range) * (H - padY * 2); }
+
+  function makeCurvePath(values) {
+    return values.map((v, i) => {
+      const x = toX(i), y = toY(v);
+      if (i === 0) return `M ${x} ${y}`;
+      const px = toX(i - 1), py = toY(values[i - 1]);
+      const cpx = (px + x) / 2;
+      return `C ${cpx} ${py}, ${cpx} ${y}, ${x} ${y}`;
+    }).join(' ');
+  }
+
+  const ns  = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(ns, 'svg');
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.style.cssText = 'width:100%;height:auto;display:block;';
+
+  const defs = document.createElementNS(ns, 'defs');
+  const grad = document.createElementNS(ns, 'linearGradient');
+  grad.setAttribute('id', 'nfg');
+  grad.setAttribute('x1','0'); grad.setAttribute('y1','0');
+  grad.setAttribute('x2','0'); grad.setAttribute('y2','1');
+  [['0%','0.22'],['100%','0']].forEach(([offset, opacity]) => {
+    const s = document.createElementNS(ns, 'stop');
+    s.setAttribute('offset', offset);
+    s.setAttribute('stop-color', '#a78bfa');
+    s.setAttribute('stop-opacity', opacity);
+    grad.appendChild(s);
+  });
+  defs.appendChild(grad);
+  svg.appendChild(defs);
+
+  // Garis grid
+  [0, 0.5, 1].forEach(pct => {
+    const y = padY + (1 - pct) * (H - padY * 2);
+    const gl = document.createElementNS(ns, 'line');
+    gl.setAttribute('x1', padX); gl.setAttribute('x2', W - padX);
+    gl.setAttribute('y1', y);    gl.setAttribute('y2', y);
+    gl.setAttribute('stroke', 'rgba(255,255,255,0.05)');
+    gl.setAttribute('stroke-width', '1');
+    svg.appendChild(gl);
+  });
+
+  // Garis nol (jika dalam range)
+  if (minVal < 0 && maxVal > 0) {
+    const zy = toY(0);
+    const zl = document.createElementNS(ns, 'line');
+    zl.setAttribute('x1', padX); zl.setAttribute('x2', W - padX);
+    zl.setAttribute('y1', zy);   zl.setAttribute('y2', zy);
+    zl.setAttribute('stroke', 'rgba(255,255,255,0.12)');
+    zl.setAttribute('stroke-width', '1');
+    zl.setAttribute('stroke-dasharray', '4 4');
+    svg.appendChild(zl);
+  }
+
+  // Area fill
+  const areaD = `${makeCurvePath(vals)} L ${toX(points.length-1)} ${H} L ${toX(0)} ${H} Z`;
+  const area  = document.createElementNS(ns, 'path');
+  area.setAttribute('d', areaD);
+  area.setAttribute('fill', 'url(#nfg)');
+  svg.appendChild(area);
+
+  // Warna garis: ungu jika naik atau stagnan, merah jika turun
+  const lineColor = vals[vals.length - 1] >= vals[0] ? '#a78bfa' : '#f5576c';
+  const path = document.createElementNS(ns, 'path');
+  path.setAttribute('d', makeCurvePath(vals));
+  path.setAttribute('fill', 'none');
+  path.setAttribute('stroke', lineColor);
+  path.setAttribute('stroke-width', '2');
+  path.setAttribute('stroke-linecap', 'round');
+  path.style.strokeDasharray  = '1200';
+  path.style.strokeDashoffset = '1200';
+  path.style.transition       = 'stroke-dashoffset 0.8s cubic-bezier(0.22,1,0.36,1)';
+  svg.appendChild(path);
+  requestAnimationFrame(() => { path.style.strokeDashoffset = '0'; });
+
+  // Titik data
+  vals.forEach((v, i) => {
+    const dot = document.createElementNS(ns, 'circle');
+    dot.setAttribute('cx', toX(i));
+    dot.setAttribute('cy', toY(v));
+    dot.setAttribute('r', '4');
+    dot.setAttribute('fill', lineColor);
+    dot.setAttribute('stroke', '#13131a');
+    dot.setAttribute('stroke-width', '2');
+    dot.style.opacity    = '0';
+    dot.style.transition = `opacity 0.3s ease ${0.5 + i * 0.04}s`;
+    const title = document.createElementNS(ns, 'title');
+    title.textContent = `${points[i].label}: ${formatRp(v)}`;
+    dot.appendChild(title);
+    svg.appendChild(dot);
+    requestAnimationFrame(() => { dot.style.opacity = '1'; });
+  });
+
+  container.appendChild(svg);
+
+  // Label tanggal (selang-seling agar tidak padat)
+  const labelRow = document.createElement('div');
+  labelRow.className = 'line-chart-labels';
+  points.forEach((p, i) => {
+    const span = document.createElement('span');
+    span.className   = 'week-label';
+    span.textContent = i % 2 === 0 ? p.label : '';
+    labelRow.appendChild(span);
+  });
+  container.appendChild(labelRow);
 }
 
 function renderBreakdown() {
@@ -803,9 +989,44 @@ document.querySelectorAll('.mobile-nav-item[data-page]').forEach(item => {
   });
 });
 
+// Fungsi buka/tutup sheet pilihan mobile
+function openMobileChoice() {
+  const overlay = document.getElementById('mobile-choice-overlay');
+  overlay.classList.remove('hidden');
+  requestAnimationFrame(() => overlay.classList.add('visible'));
+}
+function closeMobileChoice() {
+  const overlay = document.getElementById('mobile-choice-overlay');
+  overlay.classList.remove('visible');
+  setTimeout(() => overlay.classList.add('hidden'), 200);
+}
+
 document.getElementById('mobile-add-btn').addEventListener('click', e => {
   e.preventDefault();
-  document.getElementById('add-expense-btn').click();
+  openMobileChoice();
+});
+
+document.getElementById('choice-income').addEventListener('click', () => {
+  closeMobileChoice();
+  document.getElementById('inc-name').value   = '';
+  document.getElementById('inc-amount').value = '';
+  document.getElementById('inc-wallet').value = 'cash';
+  openModal(modalIncome);
+});
+
+document.getElementById('choice-expense').addEventListener('click', () => {
+  closeMobileChoice();
+  document.getElementById('exp-name').value   = '';
+  document.getElementById('exp-amount').value = '';
+  document.getElementById('exp-wallet').value = 'cash';
+  refreshCatSelect();
+  openModal(modalExpense);
+});
+
+document.getElementById('choice-cancel').addEventListener('click', () => closeMobileChoice());
+
+document.getElementById('mobile-choice-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('mobile-choice-overlay')) closeMobileChoice();
 });
 
 document.getElementById('mobile-settings-btn').addEventListener('click', () => {
@@ -874,12 +1095,18 @@ document.getElementById('add-income-btn').addEventListener('click', () => {
 document.getElementById('modal-income-close').addEventListener('click', () => closeModal(modalIncome));
 modalIncome.addEventListener('click', e => { if (e.target === modalIncome) closeModal(modalIncome); });
 document.getElementById('modal-income-save').addEventListener('click', () => {
-  const name   = document.getElementById('inc-name').value.trim();
-  const amount = parseFloat(document.getElementById('inc-amount').value) || 0;
+  const name       = document.getElementById('inc-name').value.trim();
+  const amount     = parseFloat(document.getElementById('inc-amount').value) || 0;
+  const walletType = document.getElementById('inc-wallet').value || 'cash';
   if (!name || !amount) return;
-  const newId = state.nextTrxId;
-  state.transactions.push({ id: state.nextTrxId++, name, amount, catId: null, type: 'income', date: todayStr() });
-  closeModal(modalIncome); renderDashboard(); renderTransactions(); highlightNewTrx(newId); saveState();
+  const btn = document.getElementById('modal-income-save');
+  setButtonLoading(btn, true);
+  setTimeout(() => {
+    const newId = state.nextTrxId;
+    state.transactions.push({ id: state.nextTrxId++, name, amount, catId: null, type: 'income', date: todayStr(), walletType });
+    setButtonLoading(btn, false);
+    closeModal(modalIncome); renderDashboard(); renderTransactions(); highlightNewTrx(newId); saveState();
+  }, 400);
 });
 
 const modalExpense = document.getElementById('modal-expense');
@@ -901,21 +1128,26 @@ document.getElementById('add-expense-btn').addEventListener('click', () => {
 document.getElementById('modal-expense-close').addEventListener('click', () => closeModal(modalExpense));
 modalExpense.addEventListener('click', e => { if (e.target === modalExpense) closeModal(modalExpense); });
 document.getElementById('modal-expense-save').addEventListener('click', () => {
-  const name   = document.getElementById('exp-name').value.trim();
-  const amount = parseFloat(document.getElementById('exp-amount').value) || 0;
-  const catId  = parseInt(document.getElementById('exp-category').value);
+  const name       = document.getElementById('exp-name').value.trim();
+  const amount     = parseFloat(document.getElementById('exp-amount').value) || 0;
+  const catId      = parseInt(document.getElementById('exp-category').value);
+  const walletType = document.getElementById('exp-wallet').value || 'cash';
   if (!name || !amount) return;
-  const cat = state.categories.find(c => c.id === catId);
-  if (cat) {
-    cat.spent += amount;
-    
-    if (cat.isSaving && !cat.firstSavedAt) {
-      cat.firstSavedAt = Date.now();
+  const btn = document.getElementById('modal-expense-save');
+  setButtonLoading(btn, true);
+  setTimeout(() => {
+    const cat = state.categories.find(c => c.id === catId);
+    if (cat) {
+      cat.spent += amount;
+      if (cat.isSaving && !cat.firstSavedAt) {
+        cat.firstSavedAt = Date.now();
+      }
     }
-  }
-  const newId = state.nextTrxId;
-  state.transactions.push({ id: state.nextTrxId++, name, amount, catId, type: 'expense', date: todayStr() });
-  closeModal(modalExpense); renderDashboard(); renderTransactions(); highlightNewTrx(newId); saveState();
+    const newId = state.nextTrxId;
+    state.transactions.push({ id: state.nextTrxId++, name, amount, catId, type: 'expense', date: todayStr(), walletType });
+    setButtonLoading(btn, false);
+    closeModal(modalExpense); renderDashboard(); renderTransactions(); highlightNewTrx(newId); saveState();
+  }, 400);
 });
 
 const modalCat = document.getElementById('modal-cat');
