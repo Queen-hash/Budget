@@ -1566,7 +1566,6 @@ body {
   margin: 0 auto;
 }
 
-/* ── Wallet Row ────────────────────────────────── */
 .wallet-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1664,7 +1663,6 @@ body {
   .wallet-icon { font-size: 1.2rem; }
 }
 
-/* ── Net Flow Chart ────────────────────────────── */
 .netflow-card {
   margin-bottom: 1.25rem;
 }
@@ -1690,7 +1688,6 @@ body {
 
 .netflow-warning.hidden { display: none; }
 
-/* ── Offline Footer ────────────────────────────── */
 .offline-footer {
   padding: 0.6rem 2rem;
   font-family: 'DM Mono', monospace;
@@ -1705,7 +1702,6 @@ body {
   .offline-footer { padding: 0.6rem 1rem 5rem; }
 }
 
-/* ── Button loading state ──────────────────────── */
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
@@ -1728,7 +1724,6 @@ body {
   transform: none !important;
 }
 
-/* ── Mobile choice sheet ───────────────────────── */
 .mobile-choice-overlay {
   position: fixed;
   inset: 0;
@@ -1810,8 +1805,6 @@ body {
 
 .mobile-choice-cancel:hover { color: var(--text); border-color: var(--border2); }
 
-
-/* === Payment Method Badge === */
 .trx-pm-badge {
   display: inline-flex;
   align-items: center;
@@ -1835,8 +1828,6 @@ body {
   color: #666;
 }
 
-
-/* ── Tarik Tunai Button & Modal ────────────────────────────── */
 .topbar-btn.transfer-btn {
   background: linear-gradient(135deg, rgba(251,191,36,0.15), rgba(245,87,108,0.1));
   border-color: rgba(251,191,36,0.35);
@@ -1875,14 +1866,12 @@ body {
   border-color: rgba(245,158,11,0.25);
 }
 
-/* Transfer item row style */
 .trx-item.trx-transfer {
   border-left: 2px solid rgba(251,191,36,0.4);
 }
 
-/* Mobile: ensure topbar buttons visible */
 @media (max-width: 600px) {
   .topbar-btn.transfer-btn {
-    display: none; /* hidden on mobile — use bottom sheet instead */
+    display: none;
   }
 }
