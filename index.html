@@ -352,10 +352,11 @@
       <input type="text" id="inc-name" placeholder="contoh: Bonus, Freelance" maxlength="40" />
       <label>Jumlah (Rp)</label>
       <input type="number" id="inc-amount" placeholder="0" min="0" />
-      <label>Dompet</label>
-      <select id="inc-wallet">
-        <option value="cash">💵 Tunai</option>
-        <option value="digital">📱 Digital (E-wallet / Bank)</option>
+      <label>Metode Pembayaran</label>
+      <select id="inc-payment">
+        <option value="cash">💵 Tunai Langsung</option>
+        <option value="bank_transfer">🏦 Transfer Bank</option>
+        <option value="ewallet">📲 E-Wallet Masuk</option>
       </select>
     </div>
     <button class="modal-save" id="modal-income-save">Simpan</button>
@@ -375,10 +376,13 @@
       <input type="number" id="exp-amount" placeholder="0" min="0" />
       <label>Kategori</label>
       <select id="exp-category"></select>
-      <label>Dompet</label>
-      <select id="exp-wallet">
+      <label>Metode Pembayaran</label>
+      <select id="exp-payment">
         <option value="cash">💵 Tunai</option>
-        <option value="digital">📱 Digital (E-wallet / Bank)</option>
+        <option value="qris">📱 QRIS</option>
+        <option value="bank_transfer">🏦 Transfer Bank</option>
+        <option value="ewallet">📲 E-Wallet</option>
+        <option value="credit_card">💳 Kartu Kredit</option>
       </select>
     </div>
     <button class="modal-save" id="modal-expense-save">Simpan</button>

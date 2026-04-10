@@ -1,0 +1,31 @@
+Act as a Senior Frontend Developer. Upgrade the "Finly" app dengan fitur "Metode Pembayaran" yang detail. Jangan ubah struktur dasar, tapi modifikasi `index.html` dan `script.js` sesuai instruksi ketat ini:
+
+1.  UPDATE STRUKTUR DATA (`script.js`):
+    - Tambah properti `paymentMethod` di object transaksi (values: 'cash', 'bank_transfer', 'qris', 'ewallet', 'credit_card').
+    - Default value harus ada agar data lama tidak error.
+
+2.  UI INPUT TRANSAKSI (`index.html` & `script.js`):
+    - Di dalam modal "Tambah Pemasukan" dan "Tambah Pengeluaran", tambahkan elemen `<select>` baru dengan label "Metode Pembayaran".
+    - Opsi untuk Pemasukan: "Tunai Langsung", "Transfer Bank", "E-Wallet Masuk".
+    - Opsi untuk Pengeluaran: "Tunai", "QRIS", "Transfer Bank", "E-Wallet", "Kartu Kredit".
+    - Pastikan desain dropdown konsisten dengan tema dark/light mode yang sudah ada.
+
+3.  LOGIKA SMART MAPPING (`script.js`):
+    - Saat user memilih metode pembayaran, otomatis tentukan `walletType`:
+      - Jika metode mengandung kata "Tunai" atau "Cash" ➔ set `walletType = 'cash'`.
+      - Jika metode mengandung kata "Bank", "QRIS", "E-Wallet", atau "Kartu"  set `walletType = 'digital'`.
+    - User tetap bisa melihat hasil otomatis ini, tapi fokus utama adalah kemudahan input.
+
+4.  TAMPILAN RIWAYAT TRANSAKSI (`script.js` - fungsi `renderTransactions` & `renderRecent`):
+    - Tampilkan ikon kecil atau teks singkat di sebelah nama transaksi yang menunjukkan metode pembayarannya (misal: ikon 📱 untuk QRIS, 💵 untuk Cash).
+    - Format tampilan: "[Nama Transaksi] • [Metode]" (contoh: "Makan Siang • QRIS").
+
+5.  FIX BUG MOBILE (Sesuai permintaan sebelumnya):
+    - Pastikan tombol input di mobile berfungsi dan modal metode pembayaran muncul dengan benar di layar kecil.
+
+TEKNIS:
+- Gunakan icon emoji atau SVG sederhana untuk merepresentasikan metode pembayaran di list riwayat.
+- Pastikan filter dan pencarian transaksi tetap berjalan lancar dengan data baru ini.
+- Simpan perubahan ke `localStorage`.
+
+Mulai analisis kode sekarang dan terapkan perubahan ini langkah demi langkah. Konfirmasi jika selesai.

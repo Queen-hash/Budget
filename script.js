@@ -25,6 +25,25 @@ const CAT_EMOJI = {
   'Tabungan': '💰', 'Lainnya': '📦',
 };
 
+// Metode pembayaran: label, ikon, dan walletType otomatis
+const PAYMENT_METHODS = {
+  cash:         { label: 'Tunai',         icon: '💵', walletType: 'cash'    },
+  bank_transfer:{ label: 'Transfer Bank', icon: '🏦', walletType: 'digital' },
+  qris:         { label: 'QRIS',          icon: '📱', walletType: 'digital' },
+  ewallet:      { label: 'E-Wallet',      icon: '📲', walletType: 'digital' },
+  credit_card:  { label: 'Kartu Kredit',  icon: '💳', walletType: 'digital' },
+};
+
+// Dapatkan walletType dari paymentMethod secara otomatis
+function getWalletFromPayment(paymentMethod) {
+  return (PAYMENT_METHODS[paymentMethod] || PAYMENT_METHODS['cash']).walletType;
+}
+
+// Dapatkan info lengkap metode pembayaran (dengan fallback untuk data lama)
+function getPaymentInfo(paymentMethod) {
+  return PAYMENT_METHODS[paymentMethod] || { label: 'Tunai', icon: '💵', walletType: 'cash' };
+}
+
 function formatRp(n) {
   const neg = n < 0;
   n = Math.abs(Math.round(n));
@@ -88,13 +107,18 @@ function getTotalInterest() {
 }
 
 // Hitung saldo per jenis dompet (cash / digital)
-// Transaksi lama tanpa walletType didefaultkan ke 'cash'
+// walletType otomatis diambil dari paymentMethod jika tersedia, lalu walletType, lalu default 'cash'
+function resolveWalletType(t) {
+  if (t.paymentMethod) return getWalletFromPayment(t.paymentMethod);
+  return t.walletType || 'cash';
+}
+
 function getWalletBalance(type) {
   const income  = state.transactions
-    .filter(t => t.type === 'income'  && (t.walletType || 'cash') === type)
+    .filter(t => t.type === 'income'  && resolveWalletType(t) === type)
     .reduce((s, t) => s + t.amount, 0);
   const expense = state.transactions
-    .filter(t => t.type === 'expense' && (t.walletType || 'cash') === type)
+    .filter(t => t.type === 'expense' && resolveWalletType(t) === type)
     .reduce((s, t) => s + t.amount, 0);
   return income - expense;
 }
@@ -1095,15 +1119,16 @@ document.getElementById('add-income-btn').addEventListener('click', () => {
 document.getElementById('modal-income-close').addEventListener('click', () => closeModal(modalIncome));
 modalIncome.addEventListener('click', e => { if (e.target === modalIncome) closeModal(modalIncome); });
 document.getElementById('modal-income-save').addEventListener('click', () => {
-  const name       = document.getElementById('inc-name').value.trim();
-  const amount     = parseFloat(document.getElementById('inc-amount').value) || 0;
-  const walletType = document.getElementById('inc-wallet').value || 'cash';
+  const name          = document.getElementById('inc-name').value.trim();
+  const amount        = parseFloat(document.getElementById('inc-amount').value) || 0;
+  const paymentMethod = document.getElementById('inc-payment').value || 'cash';
+  const walletType    = getWalletFromPayment(paymentMethod);
   if (!name || !amount) return;
   const btn = document.getElementById('modal-income-save');
   setButtonLoading(btn, true);
   setTimeout(() => {
     const newId = state.nextTrxId;
-    state.transactions.push({ id: state.nextTrxId++, name, amount, catId: null, type: 'income', date: todayStr(), walletType });
+    state.transactions.push({ id: state.nextTrxId++, name, amount, catId: null, type: 'income', date: todayStr(), paymentMethod, walletType });
     setButtonLoading(btn, false);
     closeModal(modalIncome); renderDashboard(); renderTransactions(); highlightNewTrx(newId); saveState();
   }, 400);
