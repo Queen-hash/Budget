@@ -608,12 +608,15 @@ function renderRecent() {
   }
 
   trxs.forEach(trx => {
-    const cat    = state.categories.find(c => c.id === trx.catId);
-    const isInc  = trx.type === 'income';
-    const emoji  = isInc ? '💵' : (CAT_EMOJI[cat?.name] || '📦');
-    const bgColor = isInc
+    const cat        = state.categories.find(c => c.id === trx.catId);
+    const isInc      = trx.type === 'income';
+    const pmInfo     = getPaymentInfo(trx.paymentMethod || 'cash');
+    const emoji      = isInc ? '💵' : (CAT_EMOJI[cat?.name] || '📦');
+    const bgColor    = isInc
       ? 'linear-gradient(135deg, rgba(67,233,123,0.2), rgba(56,249,215,0.2))'
       : `${cat?.color || '#888'}22`;
+    const catLabel   = isInc ? 'Pemasukan' : (cat?.name || 'Lainnya');
+    const pmLabel    = `${pmInfo.icon} ${pmInfo.label}`;
 
     const el = document.createElement('div');
     el.className = 'recent-item';
@@ -621,8 +624,8 @@ function renderRecent() {
       <div class="recent-left">
         <div class="recent-icon" style="background:${bgColor}">${emoji}</div>
         <div>
-          <p class="recent-name">${trx.name}</p>
-          <p class="recent-cat">${isInc ? 'Pemasukan' : (cat?.name || 'Lainnya')} · ${trx.date}</p>
+          <p class="recent-name">${trx.name} <span class="trx-pm-badge">${pmLabel}</span></p>
+          <p class="recent-cat">${catLabel} · ${trx.date}</p>
         </div>
       </div>
       <span class="recent-amount" style="color:${isInc ? 'var(--income)' : 'var(--expense)'}">
@@ -689,13 +692,15 @@ function renderTransactions() {
         ? 'linear-gradient(135deg, rgba(67,233,123,0.2), rgba(56,249,215,0.2))'
         : `${cat?.color || '#888'}22`;
 
+      const pmInfo  = getPaymentInfo(trx.paymentMethod || 'cash');
+      const pmLabel = `${pmInfo.icon} ${pmInfo.label}`;
       const el = document.createElement('div');
       el.className = 'trx-item';
       el.innerHTML = `
         <div class="trx-left">
           <div class="trx-icon" style="background:${bgColor}">${emoji}</div>
           <div>
-            <p class="trx-name">${trx.name}</p>
+            <p class="trx-name">${trx.name} <span class="trx-pm-badge">${pmLabel}</span></p>
             <p class="trx-meta">${isInc ? 'Pemasukan Tambahan' : (cat?.name || 'Lainnya')}</p>
           </div>
         </div>
@@ -1034,7 +1039,7 @@ document.getElementById('choice-income').addEventListener('click', () => {
   closeMobileChoice();
   document.getElementById('inc-name').value   = '';
   document.getElementById('inc-amount').value = '';
-  document.getElementById('inc-wallet').value = 'cash';
+  document.getElementById('inc-payment').value = 'cash';
   openModal(modalIncome);
 });
 
@@ -1042,7 +1047,7 @@ document.getElementById('choice-expense').addEventListener('click', () => {
   closeMobileChoice();
   document.getElementById('exp-name').value   = '';
   document.getElementById('exp-amount').value = '';
-  document.getElementById('exp-wallet').value = 'cash';
+  document.getElementById('exp-payment').value = 'cash';
   refreshCatSelect();
   openModal(modalExpense);
 });
@@ -1156,7 +1161,8 @@ document.getElementById('modal-expense-save').addEventListener('click', () => {
   const name       = document.getElementById('exp-name').value.trim();
   const amount     = parseFloat(document.getElementById('exp-amount').value) || 0;
   const catId      = parseInt(document.getElementById('exp-category').value);
-  const walletType = document.getElementById('exp-wallet').value || 'cash';
+  const expPayment = document.getElementById('exp-payment').value || 'cash';
+  const walletType    = getWalletFromPayment(expPayment);
   if (!name || !amount) return;
   const btn = document.getElementById('modal-expense-save');
   setButtonLoading(btn, true);
@@ -1169,7 +1175,7 @@ document.getElementById('modal-expense-save').addEventListener('click', () => {
       }
     }
     const newId = state.nextTrxId;
-    state.transactions.push({ id: state.nextTrxId++, name, amount, catId, type: 'expense', date: todayStr(), walletType });
+    state.transactions.push({ id: state.nextTrxId++, name, amount, catId, type: 'expense', date: todayStr(), paymentMethod: expPayment, walletType });
     setButtonLoading(btn, false);
     closeModal(modalExpense); renderDashboard(); renderTransactions(); highlightNewTrx(newId); saveState();
   }, 400);
