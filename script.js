@@ -9,7 +9,6 @@ let state = {
     { id: 5, name: 'Lainnya',   budget: 0, spent: 0, color: '#ffecd2', isSaving: false, interestRate: 0, firstSavedAt: null },
   ],
   transactions: [],
-  // transfers: array of { id, amount, note, date } — internal Digital→Cash moves
   transfers: [],
   nextId: 6,
   nextTrxId: 1,
@@ -28,7 +27,6 @@ const CAT_EMOJI = {
   'Tabungan': '💰', 'Lainnya': '📦',
 };
 
-// Metode pembayaran: label, ikon, dan walletType otomatis
 const PAYMENT_METHODS = {
   cash:         { label: 'Tunai',         icon: '💵', walletType: 'cash'    },
   bank_transfer:{ label: 'Transfer Bank', icon: '🏦', walletType: 'digital' },
@@ -37,12 +35,10 @@ const PAYMENT_METHODS = {
   credit_card:  { label: 'Kartu Kredit',  icon: '💳', walletType: 'digital' },
 };
 
-// Dapatkan walletType dari paymentMethod secara otomatis
 function getWalletFromPayment(paymentMethod) {
   return (PAYMENT_METHODS[paymentMethod] || PAYMENT_METHODS['cash']).walletType;
 }
 
-// Dapatkan info lengkap metode pembayaran (dengan fallback untuk data lama)
 function getPaymentInfo(paymentMethod) {
   return PAYMENT_METHODS[paymentMethod] || { label: 'Tunai', icon: '💵', walletType: 'cash' };
 }
@@ -81,10 +77,8 @@ function loadState() {
   if (s) {
     const saved = JSON.parse(s);
     state = { ...state, ...saved };
-    // Migrasi: pastikan transfers ada (data lama tidak punya)
     if (!state.transfers) state.transfers = [];
     if (!state.nextTransferId) state.nextTransferId = 1;
-    // Migrasi: default walletType = 'digital' untuk data lama
     state.transactions = state.transactions.map(t => ({
       transactionType: t.type || 'expense',
       walletType: t.paymentMethod ? (PAYMENT_METHODS[t.paymentMethod]?.walletType || 'digital') : (t.walletType || 'digital'),
@@ -124,28 +118,22 @@ function getTotalInterest() {
   return state.categories.filter(c => c.isSaving).reduce((s,c) => s + calcInterest(c), 0);
 }
 
-// Hitung saldo per jenis dompet (cash / digital)
-// walletType otomatis diambil dari paymentMethod jika tersedia, lalu walletType, lalu default 'cash'
 function resolveWalletType(t) {
   if (t.paymentMethod) return getWalletFromPayment(t.paymentMethod);
   return t.walletType || 'cash';
 }
 
 function getWalletBalance(type) {
-  // state.income (gaji pokok) selalu masuk ke Digital
   const baseIncome = type === 'digital' ? state.income : 0;
 
-  // Transaksi income tambahan ikut walletType-nya
   const trxIncome = state.transactions
     .filter(t => t.type === 'income' && resolveWalletType(t) === type)
     .reduce((s, t) => s + t.amount, 0);
 
-  // Pengeluaran biasa (termasuk saving yang expense) dikurangi dari walletType-nya
   const trxExpense = state.transactions
     .filter(t => t.type === 'expense' && resolveWalletType(t) === type)
     .reduce((s, t) => s + t.amount, 0);
 
-  // Tarik Tunai: Digital berkurang, Cash bertambah (bukan pengeluaran)
   const transfersOut = type === 'digital'
     ? (state.transfers || []).reduce((s, t) => s + t.amount, 0) : 0;
   const transfersIn  = type === 'cash'
@@ -174,8 +162,6 @@ function renderDashboard() {
   const totalInterest = getTotalInterest();
   const savingWithInterest = totalSaving + totalInterest;
 
-  // Sisa Budget = (Saldo Tunai + Saldo Digital) - Pengeluaran biasa
-  // Tabungan adalah aset terkunci, tidak masuk "uang jajan"
   const cashBal    = getWalletBalance('cash');
   const digitalBal = getWalletBalance('digital');
   const remaining  = cashBal + digitalBal;          // saldo riil tersisa
@@ -214,7 +200,6 @@ function renderDashboard() {
     notif.className = 'budget-notif';
   }
 
-  // Update wallet balance cards (cashBal & digitalBal sudah dihitung di atas)
   const cashEl    = document.getElementById('wallet-cash-display');
   const digitalEl = document.getElementById('wallet-digital-display');
   const savingEl  = document.getElementById('wallet-saving-display');
@@ -438,7 +423,6 @@ function renderWeeklyChart() {
   container.appendChild(legend);
 }
 
-// Grafik Tren Arus Kas — akumulasi saldo harian 14 hari terakhir
 function renderNetFlowChart() {
   const container = document.getElementById('netflow-chart');
   if (!container) return;
@@ -462,7 +446,6 @@ function renderNetFlowChart() {
     });
   }
 
-  // Cek 3 hari berturut-turut turun
   const warning = document.getElementById('netflow-warning');
   let consecutiveDown = 0;
   for (let i = points.length - 1; i > 0; i--) {
@@ -517,7 +500,6 @@ function renderNetFlowChart() {
   defs.appendChild(grad);
   svg.appendChild(defs);
 
-  // Garis grid
   [0, 0.5, 1].forEach(pct => {
     const y = padY + (1 - pct) * (H - padY * 2);
     const gl = document.createElementNS(ns, 'line');
@@ -528,7 +510,6 @@ function renderNetFlowChart() {
     svg.appendChild(gl);
   });
 
-  // Garis nol (jika dalam range)
   if (minVal < 0 && maxVal > 0) {
     const zy = toY(0);
     const zl = document.createElementNS(ns, 'line');
@@ -540,14 +521,12 @@ function renderNetFlowChart() {
     svg.appendChild(zl);
   }
 
-  // Area fill
   const areaD = `${makeCurvePath(vals)} L ${toX(points.length-1)} ${H} L ${toX(0)} ${H} Z`;
   const area  = document.createElementNS(ns, 'path');
   area.setAttribute('d', areaD);
   area.setAttribute('fill', 'url(#nfg)');
   svg.appendChild(area);
 
-  // Warna garis: ungu jika naik atau stagnan, merah jika turun
   const lineColor = vals[vals.length - 1] >= vals[0] ? '#a78bfa' : '#f5576c';
   const path = document.createElementNS(ns, 'path');
   path.setAttribute('d', makeCurvePath(vals));
@@ -561,7 +540,6 @@ function renderNetFlowChart() {
   svg.appendChild(path);
   requestAnimationFrame(() => { path.style.strokeDashoffset = '0'; });
 
-  // Titik data
   vals.forEach((v, i) => {
     const dot = document.createElementNS(ns, 'circle');
     dot.setAttribute('cx', toX(i));
@@ -581,7 +559,6 @@ function renderNetFlowChart() {
 
   container.appendChild(svg);
 
-  // Label tanggal (selang-seling agar tidak padat)
   const labelRow = document.createElement('div');
   labelRow.className = 'line-chart-labels';
   points.forEach((p, i) => {
@@ -681,7 +658,6 @@ let currentTimeFilter  = 'weekly';
 function renderTransactions() {
   const list = document.getElementById('trx-list');
 
-  // Gabungkan transaksi biasa + transfers sebagai virtual items
   const transferItems = (state.transfers || []).map(tr => ({
     id: 'tr_' + tr.id,
     name: tr.note || 'Tarik Tunai',
@@ -1264,7 +1240,6 @@ document.getElementById('modal-expense-save').addEventListener('click', () => {
   }, 400);
 });
 
-// ── Modal Tarik Tunai (Digital → Cash) ──────────────────────────
 const modalTransfer = document.getElementById('modal-transfer');
 document.getElementById('modal-transfer-close').addEventListener('click', () => closeModal(modalTransfer));
 modalTransfer.addEventListener('click', e => { if (e.target === modalTransfer) closeModal(modalTransfer); });
@@ -1274,7 +1249,6 @@ document.getElementById('modal-transfer-save').addEventListener('click', () => {
   const note   = document.getElementById('transfer-note').value.trim() || 'Tarik Tunai';
   if (!amount) return;
 
-  // Cegah tarik lebih dari saldo digital
   const digitalBal = getWalletBalance('digital');
   if (amount > digitalBal) {
     alert(`Saldo Digital tidak cukup. Saldo saat ini: ${formatRp(digitalBal)}`);
@@ -1298,7 +1272,6 @@ document.getElementById('modal-transfer-save').addEventListener('click', () => {
   }, 400);
 });
 
-// Tombol desktop "Tarik Tunai" di topbar
 const addTransferBtnDesk = document.getElementById('add-transfer-btn');
 if (addTransferBtnDesk) {
   addTransferBtnDesk.addEventListener('click', () => {
