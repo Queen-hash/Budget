@@ -1,5 +1,5 @@
 let state = {
-  income: 0,
+  incomeHistory: {},
   period: 'bulan',
   categories: [
     { id: 1, name: 'Makan',     budget: 0, spent: 0, color: '#43e97b', isSaving: false, interestRate: 0, firstSavedAt: null },
@@ -43,6 +43,68 @@ function getPaymentInfo(paymentMethod) {
   return PAYMENT_METHODS[paymentMethod] || { label: 'Tunai', icon: '💵', walletType: 'cash' };
 }
 
+function safeNumber(val) {
+  const num = parseFloat(val);
+  return isNaN(num) ? 0 : num;
+}
+
+function getCurrentPeriodKey() {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = (d.getMonth() + 1).toString().padStart(2, '0');
+  
+  if (state.period === 'minggu' || state.period === '2minggu') {
+     const week = Math.min(Math.ceil(d.getDate() / 7), 5);
+     return `${year}-${month}-W${week}`;
+  }
+  if (state.period === 'tahun') {
+     return `${year}`;
+  }
+  return `${year}-${month}`;
+}
+
+function getBaseIncome() {
+  const key = getCurrentPeriodKey();
+  return safeNumber(state.incomeHistory ? state.incomeHistory[key] : 0);
+}
+
+function setBaseIncome(val) {
+  const key = getCurrentPeriodKey();
+  if (!state.incomeHistory) state.incomeHistory = {};
+  state.incomeHistory[key] = safeNumber(val);
+}
+
+function getCurrentPeriodRange() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth();
+
+  if (state.period === 'minggu') {
+    const week = Math.min(Math.ceil(now.getDate() / 7), 5);
+    const startDay = (week - 1) * 7 + 1;
+    const endDay   = Math.min(startDay + 6, new Date(y, m + 1, 0).getDate());
+    return { start: new Date(y, m, startDay), end: new Date(y, m, endDay, 23, 59, 59) };
+  }
+  if (state.period === '2minggu') {
+    const isSecondHalf = now.getDate() > 14;
+    const startDay = isSecondHalf ? 15 : 1;
+    const endDay   = isSecondHalf ? new Date(y, m + 1, 0).getDate() : 14;
+    return { start: new Date(y, m, startDay), end: new Date(y, m, endDay, 23, 59, 59) };
+  }
+  if (state.period === 'tahun') {
+    return { start: new Date(y, 0, 1), end: new Date(y, 11, 31, 23, 59, 59) };
+  }
+ 
+  return { start: new Date(y, m, 1), end: new Date(y, m + 1, 0, 23, 59, 59) };
+}
+
+function isInCurrentPeriod(t) {
+  const date = parseTrxDate(t.date);
+  if (!date) return false;
+  const { start, end } = getCurrentPeriodRange();
+  return date >= start && date <= end;
+}
+
 function formatRp(n) {
   const neg = n < 0;
   n = Math.abs(Math.round(n));
@@ -79,27 +141,48 @@ function loadState() {
     state = { ...state, ...saved };
     if (!state.transfers) state.transfers = [];
     if (!state.nextTransferId) state.nextTransferId = 1;
+    
+   
+    if (!state.incomeHistory) state.incomeHistory = {};
+    if (state.income !== undefined) {
+      const key = getCurrentPeriodKey();
+      state.incomeHistory[key] = safeNumber(state.income);
+      delete state.income;
+    }
+
     state.transactions = state.transactions.map(t => ({
       transactionType: t.type || 'expense',
-      walletType: t.paymentMethod ? (PAYMENT_METHODS[t.paymentMethod]?.walletType || 'digital') : (t.walletType || 'digital'),
+      walletType: t.paymentMethod ? (PAYMENT_METHODS[t.paymentMethod]?.walletType || 'digital') : (t.walletType || (t.type === 'income' ? 'digital' : 'cash')),
       ...t,
     }));
   }
 }
 
-function getExtraIncome() { return state.transactions.filter(t => t.type === 'income').reduce((s,t) => s+t.amount, 0); }
-function getTotalIncome()  { return state.income + getExtraIncome(); }
+function getExtraIncome() {
+  return state.transactions
+    .filter(t => t.type === 'income' && isInCurrentPeriod(t))
+    .reduce((s,t) => s + safeNumber(t.amount), 0);
+}
+function getTotalIncome()  { return getBaseIncome() + getExtraIncome(); }
 
 function getTotalSpent() {
   return state.transactions.filter(t => {
+    if (!isInCurrentPeriod(t)) return false;  
     if (t.type !== 'expense') return false;
     const cat = state.categories.find(c => c.id === t.catId);
     return !cat?.isSaving;
-  }).reduce((s,t) => s+t.amount, 0);
+  }).reduce((s,t) => s + safeNumber(t.amount), 0);
 }
 
 function getTotalSaving() {
-  return state.categories.filter(c => c.isSaving).reduce((s,c) => s + c.spent, 0);
+  return state.transactions
+    .filter(t => {
+      if (!isInCurrentPeriod(t)) return false;
+      if (t.type !== 'expense') return false;
+      const cat = state.categories.find(c => c.id === t.catId);
+      return cat?.isSaving;
+    })
+    .reduce((s,t) => s + safeNumber(t.amount), 0);
 }
 
 function calcInterest(cat) {
@@ -120,29 +203,34 @@ function getTotalInterest() {
 
 function resolveWalletType(t) {
   if (t.paymentMethod) return getWalletFromPayment(t.paymentMethod);
-  return t.walletType || 'cash';
+  return t.walletType || (t.type === 'income' ? 'digital' : 'cash');
+}
+
+function isRealExpense(t) {
+  if (t.type !== 'expense') return false;
+  const cat = state.categories.find(c => c.id === t.catId);
+  return !cat?.isSaving;
 }
 
 function getWalletBalance(type) {
-  const baseIncome = type === 'digital' ? state.income : 0;
+  const baseIncome = type === 'digital' ? getBaseIncome() : 0;
 
   const trxIncome = state.transactions
     .filter(t => t.type === 'income' && resolveWalletType(t) === type)
-    .reduce((s, t) => s + t.amount, 0);
+    .reduce((s, t) => s + safeNumber(t.amount), 0);
 
   const trxExpense = state.transactions
     .filter(t => t.type === 'expense' && resolveWalletType(t) === type)
-    .reduce((s, t) => s + t.amount, 0);
+    .reduce((s, t) => s + safeNumber(t.amount), 0);
 
   const transfersOut = type === 'digital'
-    ? (state.transfers || []).reduce((s, t) => s + t.amount, 0) : 0;
+    ? (state.transfers || []).reduce((s, t) => s + safeNumber(t.amount), 0) : 0;
   const transfersIn  = type === 'cash'
-    ? (state.transfers || []).reduce((s, t) => s + t.amount, 0) : 0;
+    ? (state.transfers || []).reduce((s, t) => s + safeNumber(t.amount), 0) : 0;
 
-  return baseIncome + trxIncome - trxExpense - transfersOut + transfersIn;
+  return safeNumber(baseIncome + trxIncome - trxExpense - transfersOut + transfersIn);
 }
 
-// Helper loading state tombol Simpan
 function setButtonLoading(btn, loading) {
   if (loading) {
     btn.dataset.originalText = btn.textContent;
@@ -164,7 +252,7 @@ function renderDashboard() {
 
   const cashBal    = getWalletBalance('cash');
   const digitalBal = getWalletBalance('digital');
-  const remaining  = cashBal + digitalBal;          // saldo riil tersisa
+  const remaining  = cashBal + digitalBal;         
   const usagePct   = totalIncome > 0 ? Math.min((totalSpent / totalIncome) * 100, 100) : 0;
   const savingPct  = totalIncome > 0 ? Math.min((totalSaving / totalIncome) * 100, 100) : 0;
 
@@ -187,11 +275,26 @@ function renderDashboard() {
   remEl.style.backgroundClip = 'text';
 
   document.getElementById('remaining-label').textContent =
-    remaining < 0 ? '⚠ Defisit' : 'Tersedia';
+    remaining < 0 ? '⚠️ DEFISIT!' : 'Tersedia';
+
+ 
+  const remCard = document.querySelector('.card-remaining');
+  if (remCard) {
+    const cardLabel = remCard.querySelector('.sum-card-label');
+    if (remaining < 0) {
+      remCard.style.borderColor = 'rgba(245,87,108,0.5)';
+      remCard.style.boxShadow   = '0 0 0 1px rgba(245,87,108,0.18), inset 0 0 28px rgba(245,87,108,0.07)';
+      if (cardLabel) cardLabel.style.color = '#f5576c';
+    } else {
+      remCard.style.borderColor = '';
+      remCard.style.boxShadow   = '';
+      if (cardLabel) cardLabel.style.color  = '';
+    }
+  }
 
   const notif = document.getElementById('budget-notif');
   if (remaining < 0) {
-    notif.innerHTML = `⚠️ Saldo defisit! Pengeluaran melebihi pemasukan sebesar <strong>${formatRp(Math.abs(remaining))}</strong>`;
+    notif.innerHTML = `🚨 <strong>DEFISIT!</strong> Pengeluaran melebihi pemasukan sebesar <strong>${formatRp(Math.abs(remaining))}</strong> — segera kurangi pengeluaran!`;
     notif.className = 'budget-notif show danger';
   } else if (totalIncome > 0 && usagePct >= 80) {
     notif.innerHTML = `⚡ Sudah ${Math.round(usagePct)}% terpakai. Sisa <strong>${formatRp(remaining)}</strong>`;
@@ -271,7 +374,7 @@ function renderWeeklyChart() {
       const dayTrxs = state.transactions.filter(t => t.date === dateStr);
       dataPoints.push({
         income:  dayTrxs.filter(t => t.type === 'income').reduce((s,t) => s+t.amount, 0),
-        expense: dayTrxs.filter(t => t.type === 'expense').reduce((s,t) => s+t.amount, 0),
+        expense: dayTrxs.filter(t => isRealExpense(t)).reduce((s,t) => s+t.amount, 0),
       });
       xLabels.push(d.toLocaleDateString('id-ID', { weekday: 'short' }));
     }
@@ -288,7 +391,7 @@ function renderWeeklyChart() {
       });
       dataPoints.push({
         income:  monthTrxs.filter(t => t.type === 'income').reduce((s,t) => s+t.amount, 0),
-        expense: monthTrxs.filter(t => t.type === 'expense').reduce((s,t) => s+t.amount, 0),
+        expense: monthTrxs.filter(t => isRealExpense(t)).reduce((s,t) => s+t.amount, 0),
       });
       xLabels.push(MONTHS_ID[tgtMonth].substring(0, 3));
     }
@@ -298,7 +401,7 @@ function renderWeeklyChart() {
       const w = getWeekNum(t.date);
       if (w >= 0 && w < 5) {
         if (t.type === 'income')  weeks[w].income  += t.amount;
-        if (t.type === 'expense') weeks[w].expense += t.amount;
+        if (isRealExpense(t))     weeks[w].expense += t.amount;
       }
     });
     dataPoints = weeks;
@@ -438,7 +541,7 @@ function renderNetFlowChart() {
     const dateStr  = d.toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric' });
     const dayTrxs  = state.transactions.filter(t => t.date === dateStr);
     const dayIn    = dayTrxs.filter(t => t.type === 'income').reduce((s,t) => s+t.amount, 0);
-    const dayOut   = dayTrxs.filter(t => t.type === 'expense').reduce((s,t) => s+t.amount, 0);
+    const dayOut   = dayTrxs.filter(t => isRealExpense(t)).reduce((s,t) => s+t.amount, 0);
     cumulative    += (dayIn - dayOut);
     points.push({
       val:   cumulative,
@@ -670,7 +773,7 @@ function renderTransactions() {
 
   let trxs = [...state.transactions, ...transferItems].reverse();
 
-  // Filter: transfer tampil di semua / jika filter 'all'
+ 
   if (currentFilter !== 'all') trxs = trxs.filter(t => t.type === currentFilter);
   if (currentSearchQuery) trxs = trxs.filter(t => t.name.toLowerCase().includes(currentSearchQuery));
   if (currentCatFilter !== 'all') trxs = trxs.filter(t => t.catId === parseInt(currentCatFilter));
@@ -758,7 +861,7 @@ function renderTransactions() {
 
   list.querySelectorAll('.trx-delete').forEach(btn => {
     btn.addEventListener('click', e => {
-      // Handle hapus transfer internal
+     
       if (e.target.dataset.transferId !== undefined) {
         const tid = parseInt(e.target.dataset.transferId);
         const tr  = (state.transfers || []).find(t => t.id === tid);
@@ -768,7 +871,7 @@ function renderTransactions() {
         });
         return;
       }
-      // Handle hapus transaksi biasa
+     
       const id  = parseInt(e.target.dataset.id);
       const trx = state.transactions.find(t => t.id === id);
       showConfirm(`Hapus "${trx?.name}"?`, () => {
@@ -1070,7 +1173,6 @@ document.querySelectorAll('.mobile-nav-item[data-page]').forEach(item => {
   });
 });
 
-// Fungsi buka/tutup sheet pilihan mobile
 function openMobileChoice() {
   const overlay = document.getElementById('mobile-choice-overlay');
   overlay.classList.remove('hidden');
@@ -1129,20 +1231,25 @@ document.querySelectorAll('.see-all').forEach(link => {
 });
 
 document.getElementById('income-input').addEventListener('input', e => {
-  state.income = parseFloat(e.target.value) || 0;
+  setBaseIncome(e.target.value);
   renderDashboard(); saveState();
 });
 
 document.getElementById('income-input').addEventListener('blur', e => {
-  if (state.income > 0) e.target.value = state.income.toLocaleString('id-ID');
+  const currentInc = getBaseIncome();
+  if (currentInc > 0) e.target.value = currentInc.toLocaleString('id-ID');
 });
 
 document.getElementById('income-input').addEventListener('focus', e => {
-  e.target.value = state.income || '';
+  const currentInc = getBaseIncome();
+  e.target.value = currentInc || '';
 });
 
 document.getElementById('income-period').addEventListener('change', e => {
-  state.period = e.target.value; saveState();
+  state.period = e.target.value;
+  const currentInc = getBaseIncome();
+  document.getElementById('income-input').value = currentInc > 0 ? currentInc.toLocaleString('id-ID') : '';
+  renderDashboard(); saveState();
 });
 
 function applyTheme(theme) {
@@ -1511,7 +1618,8 @@ document.getElementById('restore-file').addEventListener('change', e => {
         state = imported;
         saveState();
         applyTheme(state.theme || 'dark');
-        document.getElementById('income-input').value = state.income > 0 ? state.income.toLocaleString('id-ID') : '';
+        const currentIncRestored = getBaseIncome();
+        document.getElementById('income-input').value = currentIncRestored > 0 ? currentIncRestored.toLocaleString('id-ID') : '';
         if (state.period) document.getElementById('income-period').value = state.period;
         refreshCatFilterSelect();
         renderDashboard(); renderBudget(); renderTransactions(); renderCalendar();
@@ -1528,8 +1636,9 @@ applyTheme(state.theme);
 const now = new Date();
 document.getElementById('topbar-month').textContent = MONTHS_ID[now.getMonth()] + ' ' + now.getFullYear();
 
-if (state.income > 0) {
-  document.getElementById('income-input').value = state.income.toLocaleString('id-ID');
+const initialInc = getBaseIncome();
+if (initialInc > 0) {
+  document.getElementById('income-input').value = initialInc.toLocaleString('id-ID');
 }
 if (state.period) document.getElementById('income-period').value = state.period;
 
@@ -1538,3 +1647,21 @@ renderBudget();
 renderTransactions();
 renderCalendar();
 refreshCatFilterSelect();
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.body.classList.add('loading');
+  
+ 
+  setTimeout(() => {
+    const splash = document.getElementById('splash-screen');
+    if (splash) {
+      splash.classList.add('fade-out');
+      document.body.classList.remove('loading');
+      
+     
+      setTimeout(() => {
+        splash.remove();
+      }, 800); 
+    }
+  }, 2800);
+});
