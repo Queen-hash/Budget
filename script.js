@@ -1253,16 +1253,46 @@ document.getElementById('income-period').addEventListener('change', e => {
 });
 
 function applyTheme(theme) {
+  if (!theme || (theme !== 'dark' && theme !== 'light')) theme = 'dark';
   document.documentElement.setAttribute('data-theme', theme);
-  document.querySelector('.theme-icon').textContent = theme === 'dark' ? '☀️' : '🌙';
-  document.getElementById('theme-label').textContent = theme === 'dark' ? 'Light Mode' : 'Dark Mode';
+
+  // Update icon teks jika ada
+  const themeIcon = document.querySelector('.theme-icon');
+  if (themeIcon) themeIcon.textContent = theme === 'dark' ? '☀️' : '🌙';
+  const themeLabel = document.getElementById('theme-label');
+  if (themeLabel) themeLabel.textContent = theme === 'dark' ? 'Light Mode' : 'Dark Mode';
   const b2 = document.getElementById('theme-toggle-2');
   if (b2) b2.textContent = theme === 'dark' ? 'Light Mode' : 'Dark Mode';
+
+  // Sync visual state toggle pill/switch
+  const toggleBtn = document.getElementById('theme-toggle');
+  if (toggleBtn) {
+    if (theme === 'light') {
+      toggleBtn.classList.add('is-light');
+    } else {
+      toggleBtn.classList.remove('is-light');
+    }
+  }
+
   state.theme = theme;
 }
 
-document.getElementById('theme-toggle').addEventListener('click',   () => { applyTheme(state.theme === 'dark' ? 'light' : 'dark'); saveState(); });
-document.getElementById('theme-toggle-2').addEventListener('click', () => { applyTheme(state.theme === 'dark' ? 'light' : 'dark'); saveState(); });
+// Theme toggle — support button pill toggle
+const themeToggleBtn = document.getElementById('theme-toggle');
+if (themeToggleBtn) {
+  themeToggleBtn.addEventListener('click', () => {
+    applyTheme(state.theme === 'dark' ? 'light' : 'dark');
+    saveState();
+  });
+}
+
+const themeToggle2Btn = document.getElementById('theme-toggle-2');
+if (themeToggle2Btn) {
+  themeToggle2Btn.addEventListener('click', () => {
+    applyTheme(state.theme === 'dark' ? 'light' : 'dark');
+    saveState();
+  });
+}
 
 function openModal(m)  { m.classList.remove('hidden'); requestAnimationFrame(() => requestAnimationFrame(() => m.classList.add('visible'))); }
 function closeModal(m) { m.classList.remove('visible'); setTimeout(() => m.classList.add('hidden'), 300); }
@@ -1630,38 +1660,37 @@ document.getElementById('restore-file').addEventListener('change', e => {
   e.target.value = '';
 });
 
-loadState();
-applyTheme(state.theme);
+function initApp() {
+  loadState();
+  applyTheme(state.theme);
 
-const now = new Date();
-document.getElementById('topbar-month').textContent = MONTHS_ID[now.getMonth()] + ' ' + now.getFullYear();
+  const now = new Date();
+  document.getElementById('topbar-month').textContent = MONTHS_ID[now.getMonth()] + ' ' + now.getFullYear();
 
-const initialInc = getBaseIncome();
-if (initialInc > 0) {
-  document.getElementById('income-input').value = initialInc.toLocaleString('id-ID');
-}
-if (state.period) document.getElementById('income-period').value = state.period;
+  const initialInc = getBaseIncome();
+  if (initialInc > 0) {
+    document.getElementById('income-input').value = initialInc.toLocaleString('id-ID');
+  }
+  if (state.period) document.getElementById('income-period').value = state.period;
 
-renderDashboard();
-renderBudget();
-renderTransactions();
-renderCalendar();
-refreshCatFilterSelect();
+  renderDashboard();
+  renderBudget();
+  renderTransactions();
+  renderCalendar();
+  refreshCatFilterSelect();
 
-document.addEventListener('DOMContentLoaded', () => {
-  document.body.classList.add('loading');
-  
- 
   setTimeout(() => {
     const splash = document.getElementById('splash-screen');
     if (splash) {
       splash.classList.add('fade-out');
       document.body.classList.remove('loading');
-      
-     
-      setTimeout(() => {
-        splash.remove();
-      }, 800); 
+      setTimeout(() => { splash.style.display = 'none'; }, 800);
     }
-  }, 2800);
-});
+  }, 2000);
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initApp);
+} else {
+  initApp();
+}
