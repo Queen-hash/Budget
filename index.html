@@ -1,465 +1,547 @@
 <!DOCTYPE html>
 <html lang="id" data-theme="dark">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Finly — Budget Planner</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap"
+    rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
+
 <body>
 
-<div class="app">
-
-  <aside class="sidebar">
-    <div class="sidebar-brand">
-      <div class="brand-icon">F</div>
-      <span class="brand-name">Finly</span>
-      <button class="sidebar-toggle" id="sidebar-toggle" title="Toggle sidebar">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <rect x="3" y="3" width="7" height="18" rx="1"/>
-          <path d="M14 8l-3 4 3 4"/>
-        </svg>
-      </button>
-    </div>
-
-    <div class="sidebar-section-label">MENU</div>
-    <nav class="sidebar-nav">
-      <a href="#" class="nav-item active" data-page="dashboard">
-        <span class="nav-icon">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-        </span>
-        <span>Dashboard</span>
-      </a>
-      <a href="#" class="nav-item" data-page="transactions">
-        <span class="nav-icon">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-        </span>
-        <span>Transaksi</span>
-      </a>
-      <a href="#" class="nav-item" data-page="budget">
-        <span class="nav-icon">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-        </span>
-        <span>Budget</span>
-      </a>
-      <a href="#" class="nav-item" data-page="calendar">
-        <span class="nav-icon">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-        </span>
-        <span>Kalender</span>
-      </a>
-    </nav>
-
-    <div class="sidebar-section-label" style="margin-top:1.5rem">LAINNYA</div>
-    <nav class="sidebar-nav">
-      <a href="#" class="nav-item" data-page="settings">
-        <span class="nav-icon">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>
-        </span>
-        <span>Pengaturan</span>
-      </a>
-    </nav>
-
-    <div class="sidebar-bottom">
-      <button class="theme-btn" id="theme-toggle">
-        <span class="theme-icon">☀️</span>
-        <span id="theme-label">Light Mode</span>
-      </button>
-    </div>
-  </aside>
-
-  <div class="main-wrap">
-
-    <header class="topbar">
-      <div class="topbar-left">
-        <h2 class="topbar-title" id="topbar-title">Dashboard</h2>
-        <span class="topbar-month" id="topbar-month"></span>
+  <div id="splash-screen" class="splash-screen">
+    <div class="splash-content">
+      <div class="splash-brand">
+        <div class="splash-logo-container">
+          <div class="splash-logo-mask"></div>
+        </div>
+        <div class="splash-text-area">
+          <div class="splash-inly">inly</div>
+          <div class="splash-slogan">Track. Save. Grow</div>
+        </div>
       </div>
-      <div class="topbar-right">
-        <button class="topbar-btn" id="add-income-btn">+ Pemasukan</button>
-        <button class="topbar-btn primary" id="add-expense-btn">+ Pengeluaran</button>
-        <button class="topbar-btn transfer-btn" id="add-transfer-btn">⇄ Tarik Tunai</button>
-        <button class="topbar-btn mobile-settings-btn" id="mobile-settings-btn" title="Pengaturan">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>
+    </div>
+  </div>
+
+  <div class="app">
+
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon">
+          <div class="brand-logo-mask"></div>
+        </div>
+        <span class="brand-name">Finly</span>
+      </div>
+
+      <div class="sidebar-section-label">
+        <span>MENU</span>
+        <button class="sidebar-toggle" id="sidebar-toggle" title="Toggle sidebar">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
         </button>
       </div>
-    </header>
+      <nav class="sidebar-nav">
+        <a href="#" class="nav-item active" data-page="dashboard">
+          <span class="nav-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="7" height="7" />
+              <rect x="14" y="3" width="7" height="7" />
+              <rect x="3" y="14" width="7" height="7" />
+              <rect x="14" y="14" width="7" height="7" />
+            </svg>
+          </span>
+          <span>Dashboard</span>
+        </a>
+        <a href="#" class="nav-item" data-page="transactions">
+          <span class="nav-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+            </svg>
+          </span>
+          <span>Transaksi</span>
+        </a>
+        <a href="#" class="nav-item" data-page="budget">
+          <span class="nav-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 6v6l4 2" />
+            </svg>
+          </span>
+          <span>Budget</span>
+        </a>
+        <a href="#" class="nav-item" data-page="calendar">
+          <span class="nav-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
+          </span>
+          <span>Kalender</span>
+        </a>
+      </nav>
 
-    <main class="main">
+      <div class="sidebar-section-label" style="margin-top:1.5rem">LAINNYA</div>
+      <nav class="sidebar-nav">
+        <a href="#" class="nav-item" data-page="settings">
+          <span class="nav-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3" />
+              <path
+                d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12" />
+            </svg>
+          </span>
+          <span>Pengaturan</span>
+        </a>
+      </nav>
 
-      <div class="page active" id="page-dashboard">
+      <div class="sidebar-bottom">
+        <button class="theme-btn" id="theme-toggle">
+          <div class="theme-icon-container">
+            <span class="theme-icon">☀️</span>
+          </div>
+          <span id="theme-label">Light Mode</span>
+        </button>
+      </div>
+    </aside>
 
-        <div id="budget-notif" class="budget-notif"></div>
+    <div class="main-wrap">
 
-        <div class="summary-row">
-          <div class="sum-card card-total">
-            <div class="sum-card-top">
-              <span class="sum-card-label">Total Pemasukan</span>
-              <div class="sum-card-icon income-icon">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      <header class="topbar">
+        <div class="topbar-left">
+          <h2 class="topbar-title" id="topbar-title">Dashboard</h2>
+          <span class="topbar-month" id="topbar-month"></span>
+        </div>
+        <div class="topbar-right">
+          <button class="topbar-btn mobile-settings-btn" id="mobile-settings-btn" title="Pengaturan">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3" />
+              <path
+                d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12" />
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <main class="main">
+
+        <div class="page active" id="page-dashboard">
+
+          <div id="budget-notif" class="budget-notif"></div>
+
+          <div class="summary-row">
+            <div class="sum-card card-total">
+              <div class="sum-card-top">
+                <span class="sum-card-label">Total Pemasukan</span>
+                <div class="sum-card-icon income-icon">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                  </svg>
+                </div>
+              </div>
+              <div class="income-input-row">
+                <span class="currency-sym">Rp</span>
+                <input type="number" id="income-input" class="income-big" placeholder="0" />
+              </div>
+              <div class="sum-card-meta">
+                <select id="income-period" class="period-sel">
+                  <option value="minggu">/ Minggu</option>
+                  <option value="2minggu">/ 2 Minggu</option>
+                  <option value="bulan" selected>/ Bulan</option>
+                  <option value="tahun">/ Tahun</option>
+                </select>
+                <span class="extra-badge">+Tambahan: <span id="extra-display">Rp 0</span></span>
               </div>
             </div>
-            <div class="income-input-row">
-              <span class="currency-sym">Rp</span>
-              <input type="number" id="income-input" class="income-big" placeholder="0" />
+
+            <div class="sum-card card-spent">
+              <div class="sum-card-top">
+                <span class="sum-card-label">Terpakai</span>
+                <div class="sum-card-icon spent-icon">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M5 12h14M12 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </div>
+              <p class="sum-card-val" id="spent-display">Rp 0</p>
+              <p class="sum-card-sub expense-color" id="spent-pct-label">0% dari pemasukan</p>
             </div>
-            <div class="sum-card-meta">
-              <select id="income-period" class="period-sel">
-                <option value="minggu">/ Minggu</option>
-                <option value="2minggu">/ 2 Minggu</option>
-                <option value="bulan" selected>/ Bulan</option>
-                <option value="tahun">/ Tahun</option>
-              </select>
-              <span class="extra-badge">+Tambahan: <span id="extra-display">Rp 0</span></span>
+
+            <div class="sum-card card-remaining">
+              <div class="sum-card-top">
+                <span class="sum-card-label">Sisa Budget</span>
+                <div class="sum-card-icon rem-icon">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M12 22C6.48 22 2 17.52 2 12S6.48 2 12 2s10 4.48 10 10-4.48 10-10 10zm0-14v4l3 3" />
+                  </svg>
+                </div>
+              </div>
+              <p class="sum-card-val" id="remaining-display">Rp 0</p>
+              <p class="sum-card-sub" id="remaining-label">Tersedia</p>
+            </div>
+
+            <div class="sum-card card-saving">
+              <div class="sum-card-top">
+                <span class="sum-card-label">Tabungan</span>
+                <div class="sum-card-icon save-icon">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M19 12H5M12 5l-7 7 7 7" />
+                  </svg>
+                </div>
+              </div>
+              <p class="sum-card-val saving-color" id="saving-display">Rp 0</p>
+              <p class="sum-card-sub" id="saving-pct-label">0% dari pemasukan</p>
             </div>
           </div>
 
-          <div class="sum-card card-spent">
-            <div class="sum-card-top">
-              <span class="sum-card-label">Terpakai</span>
-              <div class="sum-card-icon spent-icon">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          <div class="wallet-row">
+            <div class="wallet-card wallet-cash">
+              <div class="wallet-card-left">
+                <div class="wallet-icon">💵</div>
+                <div>
+                  <p class="wallet-label">Saldo Tunai</p>
+                  <p class="wallet-val" id="wallet-cash-display">Rp 0</p>
+                </div>
               </div>
+              <div class="wallet-badge">Cash</div>
             </div>
-            <p class="sum-card-val" id="spent-display">Rp 0</p>
-            <p class="sum-card-sub expense-color" id="spent-pct-label">0% dari pemasukan</p>
+            <div class="wallet-card wallet-digital">
+              <div class="wallet-card-left">
+                <div class="wallet-icon">🏦</div>
+                <div>
+                  <p class="wallet-label">Saldo Digital</p>
+                  <p class="wallet-val" id="wallet-digital-display">Rp 0</p>
+                </div>
+              </div>
+              <div class="wallet-badge digital">Digital</div>
+            </div>
+
           </div>
 
-          <div class="sum-card card-remaining">
-            <div class="sum-card-top">
-              <span class="sum-card-label">Sisa Budget</span>
-              <div class="sum-card-icon rem-icon">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22C6.48 22 2 17.52 2 12S6.48 2 12 2s10 4.48 10 10-4.48 10-10 10zm0-14v4l3 3"/></svg>
+          <div class="insights-row" id="insights-row"></div>
+
+          <div class="charts-row">
+            <div class="chart-card card-trend">
+              <div class="chart-card-header">
+                <span class="chart-card-title">Tren Pengeluaran</span>
+                <div class="time-filter-tabs">
+                  <button class="time-tab" data-period="daily">Harian</button>
+                  <button class="time-tab active" data-period="weekly">Mingguan</button>
+                  <button class="time-tab" data-period="monthly">Bulanan</button>
+                </div>
               </div>
+              <div class="bar-chart-wrap" id="weekly-chart"></div>
             </div>
-            <p class="sum-card-val" id="remaining-display">Rp 0</p>
-            <p class="sum-card-sub" id="remaining-label">Tersedia</p>
+
+            <div class="chart-card card-donut">
+              <div class="chart-card-header">
+                <span class="chart-card-title">Distribusi</span>
+              </div>
+              <div class="donut-wrap">
+                <canvas id="donut-chart" width="160" height="160"></canvas>
+                <div class="donut-center">
+                  <p class="donut-pct" id="donut-pct">0%</p>
+                  <p class="donut-sub">terpakai</p>
+                </div>
+              </div>
+              <div class="donut-legend" id="donut-legend"></div>
+            </div>
           </div>
 
-          <div class="sum-card card-saving">
-            <div class="sum-card-top">
-              <span class="sum-card-label">Tabungan</span>
-              <div class="sum-card-icon save-icon">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
-              </div>
+          <div class="chart-card netflow-card">
+            <div class="chart-card-header">
+              <span class="chart-card-title">Tren Arus Kas</span>
+              <span class="netflow-subtitle">Akumulasi saldo harian (14 hari terakhir)</span>
             </div>
-            <p class="sum-card-val saving-color" id="saving-display">Rp 0</p>
-            <p class="sum-card-sub" id="saving-pct-label">0% dari pemasukan</p>
+            <div id="netflow-chart"></div>
+            <p class="netflow-warning hidden" id="netflow-warning">⚠️ Arus kas turun selama 3 hari berturut-turut —
+              perhatikan pengeluaranmu!</p>
+          </div>
+
+          <div class="bottom-row">
+            <div class="breakdown-card">
+              <div class="chart-card-header">
+                <span class="chart-card-title">Expense Breakdown</span>
+              </div>
+              <div class="breakdown-list" id="breakdown-list"></div>
+            </div>
+
+            <div class="recent-card">
+              <div class="chart-card-header">
+                <span class="chart-card-title">Transaksi Terakhir</span>
+                <a href="#" class="see-all" data-page="transactions">Lihat semua →</a>
+              </div>
+              <div class="recent-list" id="recent-list"></div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="page" id="page-transactions">
+          <div style="display:flex;gap:0.75rem;margin-bottom:1.25rem;flex-wrap:wrap">
+            <button class="topbar-btn" id="add-income-btn">+ Pemasukan</button>
+            <button class="topbar-btn primary" id="add-expense-btn">+ Pengeluaran</button>
+            <button class="topbar-btn transfer-btn" id="add-transfer-btn">⇄ Tarik Tunai</button>
+          </div>
+          <div class="trx-search-row">
+            <div class="search-wrap">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.35-4.35" />
+              </svg>
+              <input type="text" id="trx-search" placeholder="Cari transaksi..." autocomplete="off" />
+              <button class="search-clear hidden" id="trx-search-clear">×</button>
+            </div>
+            <select id="trx-cat-filter" class="cat-filter-sel">
+              <option value="all">Semua Kategori</option>
+            </select>
+          </div>
+          <div class="trx-filter-row">
+            <button class="filter-btn active" data-filter="all">Semua</button>
+            <button class="filter-btn" data-filter="income">Pemasukan</button>
+            <button class="filter-btn" data-filter="expense">Pengeluaran</button>
+          </div>
+          <div class="trx-list" id="trx-list"></div>
+        </div>
+
+        <div class="page" id="page-budget">
+          <div class="page-actions">
+            <button class="add-btn" id="add-category-btn">+ Kategori</button>
+          </div>
+          <div class="budget-list" id="budget-list"></div>
+        </div>
+
+        <div class="page" id="page-calendar">
+          <div class="cal-header-row">
+            <button class="cal-arrow" id="cal-prev">←</button>
+            <span class="cal-month-label" id="cal-month-label"></span>
+            <button class="cal-arrow" id="cal-next">→</button>
+          </div>
+          <div class="calendar-wrap">
+            <div class="cal-grid-header">
+              <span>Min</span><span>Sen</span><span>Sel</span>
+              <span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span>
+            </div>
+            <div class="cal-grid" id="cal-grid"></div>
+          </div>
+          <div class="cal-detail" id="cal-detail">
+            <p class="cal-detail-empty">Pilih tanggal untuk melihat transaksi</p>
           </div>
         </div>
 
-        <div class="wallet-row">
-          <div class="wallet-card wallet-cash">
-            <div class="wallet-card-left">
-              <div class="wallet-icon">💵</div>
+        <div class="page" id="page-settings">
+          <div class="settings-list">
+            <div class="setting-item">
               <div>
-                <p class="wallet-label">Saldo Tunai</p>
-                <p class="wallet-val" id="wallet-cash-display">Rp 0</p>
+                <p class="setting-label">Reset Data</p>
+                <p class="setting-desc">Hapus semua data dan mulai dari awal</p>
               </div>
+              <button class="danger-btn" id="reset-btn">Reset</button>
             </div>
-            <div class="wallet-badge">Cash</div>
-          </div>
-          <div class="wallet-card wallet-digital">
-            <div class="wallet-card-left">
-              <div class="wallet-icon">🏦</div>
+            <div class="setting-item">
               <div>
-                <p class="wallet-label">Saldo Digital</p>
-                <p class="wallet-val" id="wallet-digital-display">Rp 0</p>
+                <p class="setting-label">Tema</p>
+                <p class="setting-desc">Tampilan gelap atau terang</p>
+              </div>
+              <button class="outline-btn" id="theme-toggle-2">Dark Mode</button>
+            </div>
+            <div class="setting-item">
+              <div>
+                <p class="setting-label">Ekspor Data (CSV)</p>
+                <p class="setting-desc">Unduh semua transaksi dalam format spreadsheet</p>
+              </div>
+              <button class="outline-btn" id="export-csv-btn">Ekspor CSV</button>
+            </div>
+            <div class="setting-item">
+              <div>
+                <p class="setting-label">Backup Data</p>
+                <p class="setting-desc">Simpan semua data sebagai file JSON</p>
+              </div>
+              <button class="outline-btn" id="backup-btn">Backup</button>
+            </div>
+            <div class="setting-item">
+              <div>
+                <p class="setting-label">Restore Data</p>
+                <p class="setting-desc">Pulihkan data dari file backup JSON</p>
+              </div>
+              <div style="display:flex;align-items:center;gap:0.5rem">
+                <button class="outline-btn" id="restore-btn">Pilih File</button>
+                <input type="file" id="restore-file" accept=".json" style="display:none" />
               </div>
             </div>
-            <div class="wallet-badge digital">Digital</div>
-          </div>
-
-        </div>
-
-        <div class="insights-row" id="insights-row"></div>
-
-        <div class="charts-row">
-          <div class="chart-card card-trend">
-            <div class="chart-card-header">
-              <span class="chart-card-title">Tren Pengeluaran</span>
-              <div class="time-filter-tabs">
-                <button class="time-tab" data-period="daily">Harian</button>
-                <button class="time-tab active" data-period="weekly">Mingguan</button>
-                <button class="time-tab" data-period="monthly">Bulanan</button>
-              </div>
-            </div>
-            <div class="bar-chart-wrap" id="weekly-chart"></div>
-          </div>
-
-          <div class="chart-card card-donut">
-            <div class="chart-card-header">
-              <span class="chart-card-title">Distribusi</span>
-            </div>
-            <div class="donut-wrap">
-              <canvas id="donut-chart" width="160" height="160"></canvas>
-              <div class="donut-center">
-                <p class="donut-pct" id="donut-pct">0%</p>
-                <p class="donut-sub">terpakai</p>
-              </div>
-            </div>
-            <div class="donut-legend" id="donut-legend"></div>
           </div>
         </div>
 
-        <div class="chart-card netflow-card">
-          <div class="chart-card-header">
-            <span class="chart-card-title">Tren Arus Kas</span>
-            <span class="netflow-subtitle">Akumulasi saldo harian (14 hari terakhir)</span>
-          </div>
-          <div id="netflow-chart"></div>
-          <p class="netflow-warning hidden" id="netflow-warning">⚠️ Arus kas turun selama 3 hari berturut-turut — perhatikan pengeluaranmu!</p>
-        </div>
+      </main>
 
-        <div class="bottom-row">
-          <div class="breakdown-card">
-            <div class="chart-card-header">
-              <span class="chart-card-title">Expense Breakdown</span>
-            </div>
-            <div class="breakdown-list" id="breakdown-list"></div>
-          </div>
 
-          <div class="recent-card">
-            <div class="chart-card-header">
-              <span class="chart-card-title">Transaksi Terakhir</span>
-              <a href="#" class="see-all" data-page="transactions">Lihat semua →</a>
-            </div>
-            <div class="recent-list" id="recent-list"></div>
-          </div>
-        </div>
+    </div>
+  </div>
 
+  <div class="cal-tooltip" id="cal-tooltip"></div>
+
+  <div class="modal hidden" id="confirm-overlay">
+    <div class="modal-box confirm-box">
+      <div class="modal-body" style="padding:1.75rem 1.5rem 1.25rem">
+        <p id="confirm-message" style="font-size:15px;color:var(--text);text-align:center;line-height:1.6"></p>
       </div>
-
-      <div class="page" id="page-transactions">
-        <div class="trx-search-row">
-          <div class="search-wrap">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-            <input type="text" id="trx-search" placeholder="Cari transaksi..." autocomplete="off" />
-            <button class="search-clear hidden" id="trx-search-clear">×</button>
-          </div>
-          <select id="trx-cat-filter" class="cat-filter-sel">
-            <option value="all">Semua Kategori</option>
-          </select>
-        </div>
-        <div class="trx-filter-row">
-          <button class="filter-btn active" data-filter="all">Semua</button>
-          <button class="filter-btn" data-filter="income">Pemasukan</button>
-          <button class="filter-btn" data-filter="expense">Pengeluaran</button>
-        </div>
-        <div class="trx-list" id="trx-list"></div>
+      <div style="display:flex;gap:0.75rem;padding:0 1.5rem 1.5rem">
+        <button class="confirm-btn-no" id="confirm-no">Batal</button>
+        <button class="confirm-btn-yes" id="confirm-yes">Hapus</button>
       </div>
+    </div>
+  </div>
 
-      <div class="page" id="page-budget">
-        <div class="page-actions">
-          <button class="add-btn" id="add-category-btn">+ Kategori</button>
-        </div>
-        <div class="budget-list" id="budget-list"></div>
+  <div class="modal hidden" id="modal-income">
+    <div class="modal-box">
+      <div class="modal-header">
+        <span>Tambah Pemasukan</span>
+        <button class="modal-close" id="modal-income-close">&times;</button>
       </div>
-
-      <div class="page" id="page-calendar">
-        <div class="cal-header-row">
-          <button class="cal-arrow" id="cal-prev">←</button>
-          <span class="cal-month-label" id="cal-month-label"></span>
-          <button class="cal-arrow" id="cal-next">→</button>
-        </div>
-        <div class="calendar-wrap">
-          <div class="cal-grid-header">
-            <span>Min</span><span>Sen</span><span>Sel</span>
-            <span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span>
-          </div>
-          <div class="cal-grid" id="cal-grid"></div>
-        </div>
-        <div class="cal-detail" id="cal-detail">
-          <p class="cal-detail-empty">Pilih tanggal untuk melihat transaksi</p>
-        </div>
+      <div class="modal-body">
+        <label>Keterangan</label>
+        <input type="text" id="inc-name" placeholder="contoh: Bonus, Freelance" maxlength="40" />
+        <label>Jumlah (Rp)</label>
+        <input type="number" id="inc-amount" placeholder="0" min="0" />
+        <label>Metode Pembayaran</label>
+        <select id="inc-payment">
+          <option value="cash">💵 Tunai Langsung</option>
+          <option value="bank_transfer">🏦 Transfer Bank</option>
+          <option value="ewallet">📲 E-Wallet Masuk</option>
+        </select>
       </div>
+      <button class="modal-save" id="modal-income-save">Simpan</button>
+    </div>
+  </div>
 
-      <div class="page" id="page-settings">
-        <div class="settings-list">
-          <div class="setting-item">
-            <div>
-              <p class="setting-label">Reset Data</p>
-              <p class="setting-desc">Hapus semua data dan mulai dari awal</p>
-            </div>
-            <button class="danger-btn" id="reset-btn">Reset</button>
-          </div>
-          <div class="setting-item">
-            <div>
-              <p class="setting-label">Tema</p>
-              <p class="setting-desc">Tampilan gelap atau terang</p>
-            </div>
-            <button class="outline-btn" id="theme-toggle-2">Dark Mode</button>
-          </div>
-          <div class="setting-item">
-            <div>
-              <p class="setting-label">Ekspor Data (CSV)</p>
-              <p class="setting-desc">Unduh semua transaksi dalam format spreadsheet</p>
-            </div>
-            <button class="outline-btn" id="export-csv-btn">Ekspor CSV</button>
-          </div>
-          <div class="setting-item">
-            <div>
-              <p class="setting-label">Backup Data</p>
-              <p class="setting-desc">Simpan semua data sebagai file JSON</p>
-            </div>
-            <button class="outline-btn" id="backup-btn">Backup</button>
-          </div>
-          <div class="setting-item">
-            <div>
-              <p class="setting-label">Restore Data</p>
-              <p class="setting-desc">Pulihkan data dari file backup JSON</p>
-            </div>
-            <div style="display:flex;align-items:center;gap:0.5rem">
-              <button class="outline-btn" id="restore-btn">Pilih File</button>
-              <input type="file" id="restore-file" accept=".json" style="display:none" />
-            </div>
-          </div>
-        </div>
+  <div class="modal hidden" id="modal-expense">
+    <div class="modal-box">
+      <div class="modal-header">
+        <span>Tambah Pengeluaran</span>
+        <button class="modal-close" id="modal-expense-close">&times;</button>
       </div>
-
-    </main>
-
-    <div class="offline-footer">🟢 Data Tersimpan Lokal (Mode Offline)</div>
+      <div class="modal-body">
+        <label>Keterangan</label>
+        <input type="text" id="exp-name" placeholder="contoh: Makan siang" maxlength="40" />
+        <label>Jumlah (Rp)</label>
+        <input type="number" id="exp-amount" placeholder="0" min="0" />
+        <label>Kategori</label>
+        <select id="exp-category"></select>
+        <label>Metode Pembayaran</label>
+        <select id="exp-payment">
+          <option value="cash">💵 Tunai</option>
+          <option value="qris">📱 QRIS</option>
+          <option value="bank_transfer">🏦 Transfer Bank</option>
+          <option value="ewallet">📲 E-Wallet</option>
+          <option value="credit_card">💳 Kartu Kredit</option>
+        </select>
+      </div>
+      <button class="modal-save" id="modal-expense-save">Simpan</button>
+    </div>
   </div>
-</div>
 
-<div class="cal-tooltip" id="cal-tooltip"></div>
-
-<div class="modal hidden" id="confirm-overlay">
-  <div class="modal-box confirm-box">
-    <div class="modal-body" style="padding:1.75rem 1.5rem 1.25rem">
-      <p id="confirm-message" style="font-size:15px;color:var(--text);text-align:center;line-height:1.6"></p>
-    </div>
-    <div style="display:flex;gap:0.75rem;padding:0 1.5rem 1.5rem">
-      <button class="confirm-btn-no" id="confirm-no">Batal</button>
-      <button class="confirm-btn-yes" id="confirm-yes">Hapus</button>
+  <div class="modal hidden" id="modal-cat">
+    <div class="modal-box">
+      <div class="modal-header">
+        <span>Tambah Kategori</span>
+        <button class="modal-close" id="modal-cat-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <label>Nama Kategori</label>
+        <input type="text" id="cat-name" placeholder="contoh: Makan" maxlength="20" />
+        <label>Alokasi / Target (Rp)</label>
+        <input type="number" id="cat-budget" placeholder="0" min="0" />
+        <label>Warna</label>
+        <div class="color-options" id="color-options"></div>
+        <label class="cat-saving-label">
+          <input type="checkbox" id="cat-is-saving" />
+          <span>Tandai sebagai kategori Tabungan</span>
+        </label>
+      </div>
+      <button class="modal-save" id="modal-cat-save">Simpan</button>
     </div>
   </div>
-</div>
 
-<div class="modal hidden" id="modal-income">
-  <div class="modal-box">
-    <div class="modal-header">
-      <span>Tambah Pemasukan</span>
-      <button class="modal-close" id="modal-income-close">&times;</button>
+  <div class="modal hidden" id="modal-transfer">
+    <div class="modal-box">
+      <div class="modal-header">
+        <span>🔄 Tarik Tunai</span>
+        <button class="modal-close" id="modal-transfer-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <label>Jumlah (Rp)</label>
+        <input type="number" id="transfer-amount" placeholder="0" min="0" />
+        <label>Keterangan (opsional)</label>
+        <input type="text" id="transfer-note" placeholder="contoh: ATM, Belanja Pasar" maxlength="40" />
+        <p class="transfer-info-text">💡 Dana akan berpindah dari <strong>Saldo Digital</strong> ke <strong>Saldo
+            Tunai</strong>. Total aset tidak berubah.</p>
+      </div>
+      <button class="modal-save transfer-save-btn" id="modal-transfer-save">Pindahkan Dana</button>
     </div>
-    <div class="modal-body">
-      <label>Keterangan</label>
-      <input type="text" id="inc-name" placeholder="contoh: Bonus, Freelance" maxlength="40" />
-      <label>Jumlah (Rp)</label>
-      <input type="number" id="inc-amount" placeholder="0" min="0" />
-      <label>Metode Pembayaran</label>
-      <select id="inc-payment">
-        <option value="cash">💵 Tunai Langsung</option>
-        <option value="bank_transfer">🏦 Transfer Bank</option>
-        <option value="ewallet">📲 E-Wallet Masuk</option>
-      </select>
-    </div>
-    <button class="modal-save" id="modal-income-save">Simpan</button>
   </div>
-</div>
 
-<div class="modal hidden" id="modal-expense">
-  <div class="modal-box">
-    <div class="modal-header">
-      <span>Tambah Pengeluaran</span>
-      <button class="modal-close" id="modal-expense-close">&times;</button>
+  <div class="mobile-choice-overlay hidden" id="mobile-choice-overlay">
+    <div class="mobile-choice-sheet">
+      <p class="mobile-choice-title">Tambah Transaksi</p>
+      <button class="mobile-choice-btn income-choice" id="choice-income">💰 Pemasukan</button>
+      <button class="mobile-choice-btn expense-choice" id="choice-expense">💸 Pengeluaran</button>
+      <button class="mobile-choice-btn transfer-choice" id="choice-transfer">🔄 Tarik Tunai</button>
+      <button class="mobile-choice-cancel" id="choice-cancel">Batal</button>
     </div>
-    <div class="modal-body">
-      <label>Keterangan</label>
-      <input type="text" id="exp-name" placeholder="contoh: Makan siang" maxlength="40" />
-      <label>Jumlah (Rp)</label>
-      <input type="number" id="exp-amount" placeholder="0" min="0" />
-      <label>Kategori</label>
-      <select id="exp-category"></select>
-      <label>Metode Pembayaran</label>
-      <select id="exp-payment">
-        <option value="cash">💵 Tunai</option>
-        <option value="qris">📱 QRIS</option>
-        <option value="bank_transfer">🏦 Transfer Bank</option>
-        <option value="ewallet">📲 E-Wallet</option>
-        <option value="credit_card">💳 Kartu Kredit</option>
-      </select>
-    </div>
-    <button class="modal-save" id="modal-expense-save">Simpan</button>
   </div>
-</div>
 
-<div class="modal hidden" id="modal-cat">
-  <div class="modal-box">
-    <div class="modal-header">
-      <span>Tambah Kategori</span>
-      <button class="modal-close" id="modal-cat-close">&times;</button>
-    </div>
-    <div class="modal-body">
-      <label>Nama Kategori</label>
-      <input type="text" id="cat-name" placeholder="contoh: Makan" maxlength="20" />
-      <label>Alokasi / Target (Rp)</label>
-      <input type="number" id="cat-budget" placeholder="0" min="0" />
-      <label>Warna</label>
-      <div class="color-options" id="color-options"></div>
-      <label class="cat-saving-label">
-        <input type="checkbox" id="cat-is-saving" />
-        <span>Tandai sebagai kategori Tabungan</span>
-      </label>
-    </div>
-    <button class="modal-save" id="modal-cat-save">Simpan</button>
-  </div>
-</div>
+  <nav class="mobile-nav" id="mobile-nav">
+    <a href="#" class="mobile-nav-item active" data-page="dashboard">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="7" height="7" />
+        <rect x="14" y="3" width="7" height="7" />
+        <rect x="3" y="14" width="7" height="7" />
+        <rect x="14" y="14" width="7" height="7" />
+      </svg>
+      <span>Beranda</span>
+    </a>
+    <a href="#" class="mobile-nav-item" data-page="transactions">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+      </svg>
+      <span>Transaksi</span>
+    </a>
+    <a href="#" class="mobile-nav-item mobile-nav-add" id="mobile-add-btn">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <circle cx="12" cy="12" r="10" />
+        <line x1="12" y1="8" x2="12" y2="16" />
+        <line x1="8" y1="12" x2="16" y2="12" />
+      </svg>
+      <span>Tambah</span>
+    </a>
+    <a href="#" class="mobile-nav-item" data-page="calendar">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="4" width="18" height="18" rx="2" />
+        <line x1="16" y1="2" x2="16" y2="6" />
+        <line x1="8" y1="2" x2="8" y2="6" />
+        <line x1="3" y1="10" x2="21" y2="10" />
+      </svg>
+      <span>Kalender</span>
+    </a>
+    <a href="#" class="mobile-nav-item" data-page="budget">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10" />
+        <path d="M12 6v6l4 2" />
+      </svg>
+      <span>Budget</span>
+    </a>
+  </nav>
 
-<div class="modal hidden" id="modal-transfer">
-  <div class="modal-box">
-    <div class="modal-header">
-      <span>🔄 Tarik Tunai</span>
-      <button class="modal-close" id="modal-transfer-close">&times;</button>
-    </div>
-    <div class="modal-body">
-      <label>Jumlah (Rp)</label>
-      <input type="number" id="transfer-amount" placeholder="0" min="0" />
-      <label>Keterangan (opsional)</label>
-      <input type="text" id="transfer-note" placeholder="contoh: ATM, Belanja Pasar" maxlength="40" />
-      <p class="transfer-info-text">💡 Dana akan berpindah dari <strong>Saldo Digital</strong> ke <strong>Saldo Tunai</strong>. Total aset tidak berubah.</p>
-    </div>
-    <button class="modal-save transfer-save-btn" id="modal-transfer-save">Pindahkan Dana</button>
-  </div>
-</div>
-
-<div class="mobile-choice-overlay hidden" id="mobile-choice-overlay">
-  <div class="mobile-choice-sheet">
-    <p class="mobile-choice-title">Tambah Transaksi</p>
-    <button class="mobile-choice-btn income-choice" id="choice-income">💰 Pemasukan</button>
-    <button class="mobile-choice-btn expense-choice" id="choice-expense">💸 Pengeluaran</button>
-    <button class="mobile-choice-btn transfer-choice" id="choice-transfer">🔄 Tarik Tunai</button>
-    <button class="mobile-choice-cancel" id="choice-cancel">Batal</button>
-  </div>
-</div>
-
-<nav class="mobile-nav" id="mobile-nav">
-  <a href="#" class="mobile-nav-item active" data-page="dashboard">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-    <span>Beranda</span>
-  </a>
-  <a href="#" class="mobile-nav-item" data-page="transactions">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-    <span>Transaksi</span>
-  </a>
-  <a href="#" class="mobile-nav-item mobile-nav-add" id="mobile-add-btn">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-    <span>Tambah</span>
-  </a>
-  <a href="#" class="mobile-nav-item" data-page="calendar">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-    <span>Kalender</span>
-  </a>
-  <a href="#" class="mobile-nav-item" data-page="budget">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-    <span>Budget</span>
-  </a>
-</nav>
-
-<script src="script.js"></script>
+  <script src="script.js"></script>
 </body>
+
 </html>
